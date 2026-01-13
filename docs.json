@@ -28,9 +28,11 @@
     "tabs": [
       {
         "tab": "Guides",
-        "groups": [
+        "pages": [
+          "guides/identity-verification",
           {
             "group": "Customization",
+            "hidden": true,
             "pages": [
               "essentials/settings",
               "essentials/navigation"
@@ -38,6 +40,7 @@
           },
           {
             "group": "Writing content",
+            "hidden": true,
             "pages": [
               "essentials/markdown",
               "essentials/code",
@@ -47,6 +50,7 @@
           },
           {
             "group": "AI tools",
+            "hidden": true,
             "pages": [
               "ai-tools/cursor",
               "ai-tools/claude-code",

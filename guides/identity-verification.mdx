@@ -1,0 +1,518 @@
+---
+title: "Identity Verification"
+---
+
+````markdown
+# Identity Verification
+
+> Authenticate users in your Crow widget so they get persistent conversations and personalized experiences.
+
+Identity verification lets you securely authenticate your users in your Crow widget. When a user is logged into your website, you can identify them to Crow so the widget knows who they are and can provide personalized, authenticated experiences.
+
+---
+
+## When to Use Identity Verification
+
+<details>
+<summary><strong>Personalize the Chat Experience</strong></summary>
+
+Make your AI Agent recognize logged-in users so it can:
+
+- Greet users by name instead of generic greetings
+- Access their account information and preferences
+- Show content relevant to their subscription or role
+- Provide support based on their history with your service
+
+</details>
+
+<details>
+<summary><strong>Enable Persistent Conversations</strong></summary>
+
+Verified users get conversation history that:
+
+- Persists across browser sessions and devices
+- Lets users resume old chats where they left off
+- Maintains context across multiple conversations
+
+</details>
+
+<details>
+<summary><strong>Enable Actions with User Data</strong></summary>
+
+When you need actions that require user-specific information:
+
+- Custom actions that access user details (name, email, subscription info)
+- Stripe actions for billing, subscriptions, and invoices
+- Any integration that needs to know who the user is
+
+</details>
+
+---
+
+## What Verified Users Get
+
+| Feature                   | Anonymous           | Verified       |
+| ------------------------- | ------------------- | -------------- |
+| Chat with AI              | ✅                  | ✅             |
+| Conversation saved        | ❌ (lost on reload) | ✅ (permanent) |
+| View past conversations   | ❌                  | ✅             |
+| Start new conversations   | ❌                  | ✅             |
+| Personalized by name      | ❌                  | ✅             |
+| Actions with user context | ❌                  | ✅             |
+
+---
+
+## Implementation Guide
+
+### Prerequisites
+
+- A website with the Crow widget script already installed
+- A backend server where you can securely generate JWT tokens
+- Your Crow Verification Secret (found in your Crow Dashboard)
+
+### How It Works
+
+```
+1. User logs into YOUR app
+2. Your backend generates a JWT signed with your Crow secret
+3. Your frontend calls window.crow('identify', { token })
+4. Crow widget now knows who the user is
+```
+
+---
+
+## Step 1: Get Your Verification Secret
+
+1. Go to **Crow Dashboard** → **Setup** → **Embed Widget** tab
+2. Copy your **Verification Secret**
+3. Add it to your backend environment variables:
+
+```bash
+# .env file
+CROW_VERIFICATION_SECRET=your_secret_here
+```
+
+> ⚠️ **Never expose this secret in frontend code!** It must stay on your server.
+
+---
+
+## Step 2: Create a Backend Endpoint
+
+Create an API endpoint that generates a JWT for authenticated users.
+
+### JWT Payload Reference
+
+| Field               | Type   | Required | Description                              |
+| ------------------- | ------ | -------- | ---------------------------------------- |
+| `user_id`           | string | ✅ Yes   | Unique identifier for the user           |
+| `exp`               | number | ✅ Yes   | Expiration timestamp (Unix seconds)      |
+| `email`             | string | No       | User's email address                     |
+| `name`              | string | No       | User's display name                      |
+| `phone_number`      | string | No       | User's phone number                      |
+| `custom_attributes` | object | No       | Any custom key-value data about the user |
+| `stripe_accounts`   | array  | No       | Stripe customer IDs for billing actions  |
+
+### Node.js (Express)
+
+```javascript
+const jwt = require("jsonwebtoken");
+const express = require("express");
+const router = express.Router();
+
+// GET /api/crow-token
+// Protect this endpoint with your auth middleware
+router.get("/crow-token", authMiddleware, (req, res) => {
+  const user = req.user; // From your auth middleware
+
+  const payload = {
+    user_id: String(user.id), // Required: must be a string
+    exp: Math.floor(Date.now() / 1000) + 60 * 60, // Required: 1 hour expiration
+    email: user.email, // Optional
+    name: user.name || `${user.firstName} ${user.lastName}`, // Optional
+  };
+
+  const token = jwt.sign(payload, process.env.CROW_VERIFICATION_SECRET, {
+    algorithm: "HS256",
+  });
+
+  res.json({ token });
+});
+
+module.exports = router;
+```
+
+### Python (FastAPI)
+
+```python
+import jwt
+import time
+import os
+from fastapi import APIRouter, Depends
+
+router = APIRouter()
+
+@router.get("/api/crow-token")
+async def get_crow_token(user = Depends(get_current_user)):
+    """Generate Crow identity token for authenticated user."""
+
+    payload = {
+        "user_id": str(user.id),  # Required: must be a string
+        "exp": int(time.time()) + (60 * 60),  # Required: 1 hour expiration
+        "email": user.email,  # Optional
+        "name": user.name,  # Optional
+    }
+
+    token = jwt.encode(
+        payload,
+        os.environ["CROW_VERIFICATION_SECRET"],
+        algorithm="HS256"
+    )
+
+    return {"token": token}
+```
+
+### Python (Flask)
+
+```python
+import jwt
+import time
+import os
+from flask import jsonify
+from flask_login import login_required, current_user
+
+@app.route("/api/crow-token")
+@login_required
+def get_crow_token():
+    """Generate Crow identity token for authenticated user."""
+
+    payload = {
+        "user_id": str(current_user.id),  # Required: must be a string
+        "exp": int(time.time()) + (60 * 60),  # Required: 1 hour expiration
+        "email": current_user.email,  # Optional
+        "name": current_user.name,  # Optional
+    }
+
+    token = jwt.encode(
+        payload,
+        os.environ["CROW_VERIFICATION_SECRET"],
+        algorithm="HS256"
+    )
+
+    return jsonify({"token": token})
+```
+
+### PHP
+
+```php
+<?php
+use Firebase\JWT\JWT;
+
+// Protect this endpoint with your auth middleware
+function getCrowToken($user) {
+    $secret = $_ENV['CROW_VERIFICATION_SECRET'];
+
+    $payload = [
+        'user_id' => strval($user['id']),  // Required: must be a string
+        'exp' => time() + (60 * 60),  // Required: 1 hour expiration
+        'email' => $user['email'],  // Optional
+        'name' => $user['name'],  // Optional
+    ];
+
+    $token = JWT::encode($payload, $secret, 'HS256');
+
+    return json_encode(['token' => $token]);
+}
+?>
+```
+
+---
+
+## Step 3: Identify Users in Your Frontend
+
+After your user logs in, fetch the token from your backend and identify them to Crow.
+
+### Vanilla JavaScript
+
+```javascript
+async function identifyUserToCrow() {
+  try {
+    const response = await fetch("/api/crow-token", {
+      headers: {
+        Authorization: `Bearer ${yourAuthToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Failed to get Crow token");
+      return;
+    }
+
+    const { token } = await response.json();
+
+    // Identify user to Crow widget
+    window.crow("identify", {
+      token: token,
+      name: userName, // Optional: visible to AI for personalization
+    });
+
+    console.log("User identified to Crow ✅");
+  } catch (error) {
+    console.error("Error identifying to Crow:", error);
+  }
+}
+
+// Call after user logs in
+identifyUserToCrow();
+```
+
+### React
+
+```jsx
+import { useEffect } from "react";
+import { useAuth } from "./your-auth-hook";
+
+function App() {
+  const { user, isAuthenticated, getAuthToken } = useAuth();
+
+  useEffect(() => {
+    async function identifyToCrow() {
+      if (!isAuthenticated || !user) return;
+
+      try {
+        const response = await fetch("/api/crow-token", {
+          headers: {
+            Authorization: `Bearer ${await getAuthToken()}`,
+          },
+        });
+
+        const { token } = await response.json();
+
+        window.crow("identify", {
+          token: token,
+          name: user.name,
+        });
+
+        console.log("[Crow] User identified ✅");
+      } catch (error) {
+        console.error("[Crow] Identify error:", error);
+      }
+    }
+
+    identifyToCrow();
+  }, [user, isAuthenticated]);
+
+  return <YourApp />;
+}
+```
+
+### React with Clerk
+
+```jsx
+import { useEffect } from "react";
+import { useUser, useAuth } from "@clerk/clerk-react";
+
+function App() {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    async function identifyToCrow() {
+      if (!user) return;
+
+      try {
+        const authToken = await getToken();
+
+        const response = await fetch("/api/crow-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            email: user.primaryEmailAddress?.emailAddress,
+            first_name: user.firstName,
+            last_name: user.lastName,
+          }),
+        });
+
+        const { token } = await response.json();
+
+        window.crow("identify", {
+          token: token,
+          name: user.fullName || user.firstName,
+        });
+
+        console.log("[Crow] User identified ✅");
+      } catch (error) {
+        console.error("[Crow] Identify error:", error);
+      }
+    }
+
+    identifyToCrow();
+  }, [user]);
+
+  return <YourApp />;
+}
+```
+
+---
+
+## Step 4: Handle Logout
+
+When your user logs out, reset the Crow widget to clear their identity:
+
+```javascript
+function handleLogout() {
+  // Your normal logout logic
+  logout();
+
+  // Reset Crow to anonymous mode
+  window.crow("resetUser");
+}
+```
+
+> **Important:** Always call `resetUser` on logout to prevent the next user from seeing the previous user's conversation history.
+
+---
+
+## Complete Example
+
+Here's what a complete implementation looks like:
+
+### Backend (`server.js`)
+
+```javascript
+require("dotenv").config();
+const express = require("express");
+const jwt = require("jsonwebtoken");
+
+const app = express();
+app.use(express.json());
+
+// Your auth middleware (example)
+const authMiddleware = (req, res, next) => {
+  // Verify your app's auth token and attach user to req
+  next();
+};
+
+// Crow token endpoint
+app.get("/api/crow-token", authMiddleware, (req, res) => {
+  const user = req.user;
+
+  const payload = {
+    user_id: String(user.id),
+    email: user.email,
+    name: user.name,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  };
+
+  const token = jwt.sign(payload, process.env.CROW_VERIFICATION_SECRET, {
+    algorithm: "HS256",
+  });
+
+  res.json({ token });
+});
+
+app.listen(3000);
+```
+
+### Frontend (`index.html`)
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My App</title>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!-- Your app code -->
+    <script src="/app.js"></script>
+
+    <!-- Crow Widget -->
+    <script
+      src="https://api.usecrow.org/static/crow-widget.js"
+      data-api-url="https://api.usecrow.org"
+      data-product-id="YOUR_PRODUCT_ID"
+    ></script>
+
+    <script>
+      // After your app loads and user is authenticated
+      async function initCrow() {
+        if (!currentUser) return;
+
+        const res = await fetch("/api/crow-token", {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        const { token } = await res.json();
+
+        window.crow("identify", {
+          token: token,
+          name: currentUser.name,
+        });
+      }
+
+      // Call after login or on page load if already logged in
+      initCrow();
+    </script>
+  </body>
+</html>
+```
+
+---
+
+## Security Best Practices
+
+| Do ✅                                                 | Don't ❌                                     |
+| ----------------------------------------------------- | -------------------------------------------- |
+| Generate JWTs on your server                          | Generate JWTs in client-side JavaScript      |
+| Store secret in environment variables                 | Hardcode secret in your code                 |
+| Use short expiration times (1 hour)                   | Use very long expiration times (days)        |
+| Always use HTTPS                                      | Expose endpoints over HTTP                   |
+| Validate user authentication before generating tokens | Generate tokens for unauthenticated requests |
+
+---
+
+## Troubleshooting
+
+### User not identified / Conversations don't persist
+
+1. **Check your secret** — Make sure `CROW_VERIFICATION_SECRET` in your `.env` matches the one in Crow Dashboard
+2. **Check `user_id` is a string** — Must be `"123"` not `123`
+3. **Check token isn't expired** — `exp` should be in the future
+4. **Check browser console** — Look for `[Crow]` log messages
+
+### Token verification fails
+
+```javascript
+// ❌ Wrong - user_id as number
+{
+  user_id: 12345;
+}
+
+// ✅ Correct - user_id as string
+{
+  user_id: "12345";
+}
+```
+
+### Widget not loading
+
+1. Check script tag is present and correct
+2. Check `data-product-id` matches your Crow Dashboard
+3. Check browser console for errors
+
+### Identity not persisting across page loads
+
+1. Make sure you call `identify()` early in your app lifecycle
+2. Call it on page load if user is already logged in, not just after login
+3. Check that the token fetch isn't failing silently
+
+---
+
+## Need Help?
+
+- 📧 Email: support@usecrow.org
+- 📅 Book a call: [calendly.com/aryanv0213/30min](https://calendly.com/aryanv0213/30min)
+````
