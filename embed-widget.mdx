@@ -1,0 +1,127 @@
+---
+title: "Embed Widget"
+description: "Add an AI-powered support widget to your website in minutes"
+---
+
+## Quick Start
+
+Add the Crow widget to your website with a single script tag:
+
+```html
+<script
+  src="https://api.usecrow.org/static/crow-widget.js"
+  data-api-url="https://api.usecrow.org"
+  data-product-id="YOUR_PRODUCT_ID"
+></script>
+```
+
+Place this script before the closing `</body>` tag in your HTML.
+
+---
+
+## Find Your Product ID
+
+1. Go to **Crow Dashboard** → **Setup** → **Embed Widget** tab
+2. Copy your **Product ID** from the embed code shown
+3. Replace `YOUR_PRODUCT_ID` in the script above
+
+---
+
+## Script Attributes
+
+| Attribute | Required | Description |
+| --- | --- | --- |
+| `src` | Yes | The Crow widget script URL |
+| `data-api-url` | Yes | Crow API endpoint |
+| `data-product-id` | Yes | Your unique product identifier |
+
+---
+
+## Example Integration
+
+### Basic HTML
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My Website</title>
+  </head>
+  <body>
+    <h1>Welcome to My Site</h1>
+
+    <!-- Your website content -->
+
+    <!-- Crow Widget - Add before closing body tag -->
+    <script
+      src="https://api.usecrow.org/static/crow-widget.js"
+      data-api-url="https://api.usecrow.org"
+      data-product-id="YOUR_PRODUCT_ID"
+    ></script>
+  </body>
+</html>
+```
+
+### React / Next.js
+
+For React apps, add the script to your `index.html` or use a script loader:
+
+```jsx
+// In your _app.tsx or layout component
+import { useEffect } from 'react';
+
+export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    // Load Crow widget
+    const script = document.createElement('script');
+    script.src = 'https://api.usecrow.org/static/crow-widget.js';
+    script.setAttribute('data-api-url', 'https://api.usecrow.org');
+    script.setAttribute('data-product-id', 'YOUR_PRODUCT_ID');
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  return <Component {...pageProps} />;
+}
+```
+
+---
+
+## What's Next?
+
+Once the widget is embedded, your users can start chatting with your AI agent right away.
+
+To enable **persistent conversations** and **personalized experiences** for logged-in users, set up [Identity Verification](/identity-verification).
+
+---
+
+## Troubleshooting
+
+### Widget not appearing
+
+1. **Check script placement** — Make sure the script is inside the `<body>` tag
+2. **Check Product ID** — Verify your `data-product-id` matches the one in your dashboard
+3. **Check console** — Look for any JavaScript errors in browser DevTools
+4. **Check network** — Ensure the script loads successfully (no 404 errors)
+
+### Widget appears but doesn't work
+
+1. **Check API URL** — Make sure `data-api-url` is set correctly
+2. **Check CORS** — Your domain might need to be whitelisted
+3. **Contact support** — Reach out if issues persist
+
+---
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="Email Support" icon="envelope" href="mailto:support@usecrow.ai">
+    support@usecrow.ai
+  </Card>
+  <Card title="Book a Call" icon="calendar" href="https://cal.com/aryan-vij-wpimwt/30min">
+    Schedule a 30-minute call
+  </Card>
+</CardGroup>

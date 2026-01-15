@@ -1,11 +1,7 @@
 ---
 title: "Identity Verification"
+description: "Authenticate users in your Crow widget for persistent conversations and personalized experiences"
 ---
-
-````markdown
-# Identity Verification
-
-> Authenticate users in your Crow widget so they get persistent conversations and personalized experiences.
 
 Identity verification lets you securely authenticate your users in your Crow widget. When a user is logged into your website, you can identify them to Crow so the widget knows who they are and can provide personalized, authenticated experiences.
 
@@ -13,20 +9,16 @@ Identity verification lets you securely authenticate your users in your Crow wid
 
 ## When to Use Identity Verification
 
-<details>
-<summary><strong>Personalize the Chat Experience</strong></summary>
+### Personalize the Chat Experience
 
 Make your AI Agent recognize logged-in users so it can:
 
 - Greet users by name instead of generic greetings
 - Access their account information and preferences
 - Show content relevant to their subscription or role
-- Provide support based on their history with your service
+- Take actions on your product on behalf of the user (authenticated)
 
-</details>
-
-<details>
-<summary><strong>Enable Persistent Conversations</strong></summary>
+### Enable Persistent Conversations
 
 Verified users get conversation history that:
 
@@ -34,10 +26,7 @@ Verified users get conversation history that:
 - Lets users resume old chats where they left off
 - Maintains context across multiple conversations
 
-</details>
-
-<details>
-<summary><strong>Enable Actions with User Data</strong></summary>
+### Enable Actions with User Data
 
 When you need actions that require user-specific information:
 
@@ -45,20 +34,18 @@ When you need actions that require user-specific information:
 - Stripe actions for billing, subscriptions, and invoices
 - Any integration that needs to know who the user is
 
-</details>
-
 ---
 
 ## What Verified Users Get
 
-| Feature                   | Anonymous           | Verified       |
-| ------------------------- | ------------------- | -------------- |
-| Chat with AI              | ✅                  | ✅             |
-| Conversation saved        | ❌ (lost on reload) | ✅ (permanent) |
-| View past conversations   | ❌                  | ✅             |
-| Start new conversations   | ❌                  | ✅             |
-| Personalized by name      | ❌                  | ✅             |
-| Actions with user context | ❌                  | ✅             |
+| Feature | Anonymous | Verified |
+| --- | --- | --- |
+| Chat with AI | ✅ | ✅ |
+| Conversation saved | ❌ (lost on reload) | ✅ (permanent) |
+| View past conversations | ❌ | ✅ |
+| Start new conversations | ❌ | ✅ |
+| Personalized by name | ❌ | ✅ |
+| Actions with user context | ❌ | ✅ |
 
 ---
 
@@ -72,7 +59,7 @@ When you need actions that require user-specific information:
 
 ### How It Works
 
-```
+```text
 1. User logs into YOUR app
 2. Your backend generates a JWT signed with your Crow secret
 3. Your frontend calls window.crow('identify', { token })
@@ -92,7 +79,9 @@ When you need actions that require user-specific information:
 CROW_VERIFICATION_SECRET=your_secret_here
 ```
 
-> ⚠️ **Never expose this secret in frontend code!** It must stay on your server.
+<Warning>
+**Never expose this secret in frontend code!** It must stay on your server.
+</Warning>
 
 ---
 
@@ -102,15 +91,15 @@ Create an API endpoint that generates a JWT for authenticated users.
 
 ### JWT Payload Reference
 
-| Field               | Type   | Required | Description                              |
-| ------------------- | ------ | -------- | ---------------------------------------- |
-| `user_id`           | string | ✅ Yes   | Unique identifier for the user           |
-| `exp`               | number | ✅ Yes   | Expiration timestamp (Unix seconds)      |
-| `email`             | string | No       | User's email address                     |
-| `name`              | string | No       | User's display name                      |
-| `phone_number`      | string | No       | User's phone number                      |
-| `custom_attributes` | object | No       | Any custom key-value data about the user |
-| `stripe_accounts`   | array  | No       | Stripe customer IDs for billing actions  |
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `user_id` | string | Yes | Unique identifier for the user |
+| `exp` | number | Yes | Expiration timestamp (Unix seconds) |
+| `email` | string | No | User's email address |
+| `name` | string | No | User's display name |
+| `phone_number` | string | No | User's phone number |
+| `custom_attributes` | object | No | Any custom key-value data about the user |
+| `stripe_accounts` | array | No | Stripe customer IDs for billing actions |
 
 ### Node.js (Express)
 
@@ -199,30 +188,6 @@ def get_crow_token():
     )
 
     return jsonify({"token": token})
-```
-
-### PHP
-
-```php
-<?php
-use Firebase\JWT\JWT;
-
-// Protect this endpoint with your auth middleware
-function getCrowToken($user) {
-    $secret = $_ENV['CROW_VERIFICATION_SECRET'];
-
-    $payload = [
-        'user_id' => strval($user['id']),  // Required: must be a string
-        'exp' => time() + (60 * 60),  // Required: 1 hour expiration
-        'email' => $user['email'],  // Optional
-        'name' => $user['name'],  // Optional
-    ];
-
-    $token = JWT::encode($payload, $secret, 'HS256');
-
-    return json_encode(['token' => $token]);
-}
-?>
 ```
 
 ---
@@ -371,7 +336,9 @@ function handleLogout() {
 }
 ```
 
-> **Important:** Always call `resetUser` on logout to prevent the next user from seeing the previous user's conversation history.
+<Warning>
+Always call `resetUser` on logout to prevent the next user from seeing the previous user's conversation history.
+</Warning>
 
 ---
 
@@ -379,7 +346,7 @@ function handleLogout() {
 
 Here's what a complete implementation looks like:
 
-### Backend (`server.js`)
+### Backend (server.js)
 
 ```javascript
 require("dotenv").config();
@@ -416,7 +383,7 @@ app.get("/api/crow-token", authMiddleware, (req, res) => {
 app.listen(3000);
 ```
 
-### Frontend (`index.html`)
+### Frontend (index.html)
 
 ```html
 <!DOCTYPE html>
@@ -464,12 +431,12 @@ app.listen(3000);
 
 ## Security Best Practices
 
-| Do ✅                                                 | Don't ❌                                     |
-| ----------------------------------------------------- | -------------------------------------------- |
-| Generate JWTs on your server                          | Generate JWTs in client-side JavaScript      |
-| Store secret in environment variables                 | Hardcode secret in your code                 |
-| Use short expiration times (1 hour)                   | Use very long expiration times (days)        |
-| Always use HTTPS                                      | Expose endpoints over HTTP                   |
+| Do ✅ | Don't ❌ |
+| --- | --- |
+| Generate JWTs on your server | Generate JWTs in client-side JavaScript |
+| Store secret in environment variables | Hardcode secret in your code |
+| Use short expiration times (1 hour) | Use very long expiration times (days) |
+| Always use HTTPS | Expose endpoints over HTTP |
 | Validate user authentication before generating tokens | Generate tokens for unauthenticated requests |
 
 ---
@@ -513,6 +480,11 @@ app.listen(3000);
 
 ## Need Help?
 
-- 📧 Email: support@usecrow.org
-- 📅 Book a call: [calendly.com/aryanv0213/30min](https://calendly.com/aryanv0213/30min)
-````
+<CardGroup cols={2}>
+  <Card title="Email Support" icon="envelope" href="mailto:support@usecrow.ai">
+    support@usecrow.ai
+  </Card>
+  <Card title="Book a Call" icon="calendar" href="https://cal.com/aryan-vij-wpimwt/30min">
+    Schedule a 30-minute call
+  </Card>
+</CardGroup>
