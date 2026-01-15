@@ -27,8 +27,7 @@
   },
   "logo": {
     "light": "/logo/crow.png",
-    "dark": "/logo/crow.png",
-    "height": 32
+    "dark": "/logo/crow.png"
   },
   "navbar": {
     "links": [
