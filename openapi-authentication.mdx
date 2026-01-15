@@ -1,0 +1,704 @@
+---
+title: "OpenAPI Authentication Guide"
+description: "Learn how to configure authentication for your API when integrating with Crow"
+---
+
+This guide explains how to configure authentication for your API when integrating with Crow. Your OpenAPI specification tells Crow how to call your API endpoints, and the authentication configuration determines how Crow authenticates those requests.
+
+## Overview
+
+Crow supports three authentication methods for API integrations:
+
+| Auth Type        | Use Case                                          | Token Source                 |
+| ---------------- | ------------------------------------------------- | ---------------------------- |
+| **API Key**      | Server-to-server authentication with a static key | Configured in Crow dashboard |
+| **Bearer Token** | Static token-based authentication                 | Configured in Crow dashboard |
+| **JWT Forward**  | Per-user authentication using identity tokens     | Forwarded from widget user   |
+
+---
+
+## API Key Authentication
+
+Use API Key authentication when your backend expects a static API key in a custom header.
+
+### When to Use
+
+- Your API uses a simple API key for authentication
+- The key should be sent in a custom header (e.g., `X-API-Key`, `Api-Key`)
+- All requests from Crow should use the same credentials
+
+### OpenAPI Specification
+
+```yaml
+openapi: 3.0.3
+info:
+  title: My API
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: List of users
+```
+
+### Crow Configuration
+
+In the Crow dashboard under **Integrations > API Connection**:
+
+1. Select **API Key** as the authentication type
+2. Enter your API key
+3. Specify the header name (e.g., `X-API-Key`)
+
+### How It Works
+
+```
+Widget User → Crow → Your API
+                ↓
+         X-API-Key: your-api-key-here
+```
+
+Every request from Crow to your API includes the configured API key in the specified header.
+
+---
+
+## Bearer Token Authentication
+
+Use Bearer Token authentication when your backend expects a static token in the `Authorization` header.
+
+### When to Use
+
+- Your API uses OAuth 2.0 or similar token-based authentication
+- You have a long-lived access token or service account token
+- The token should be sent as `Authorization: Bearer <token>`
+
+### OpenAPI Specification
+
+```yaml
+openapi: 3.0.3
+info:
+  title: My API
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token for authentication
+
+security:
+  - BearerAuth: []
+
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List all orders
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of orders
+```
+
+### Crow Configuration
+
+In the Crow dashboard under **Integrations > API Connection**:
+
+1. Select **Bearer Token** as the authentication type
+2. Enter your bearer token
+
+### How It Works
+
+```
+Widget User → Crow → Your API
+                ↓
+         Authorization: Bearer your-static-token
+```
+
+Every request from Crow to your API includes the configured token in the `Authorization` header.
+
+---
+
+## JWT Forward Authentication
+
+Use JWT Forward when you need your API to know **which end-user** is making the request. This is the most powerful authentication method, enabling personalized actions like "cancel my subscription" or "show my orders."
+
+### When to Use
+
+- Your API endpoints are user-specific (e.g., `/my/orders`, `/account/settings`)
+- You need to verify the identity of the end-user making the request
+- You want to perform actions on behalf of a specific user
+- You're already using Crow's identity verification feature
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  1. Your Backend generates a JWT for the user                           │
+│                                                                         │
+│     jwt.sign({                                                          │
+│       user_id: "user_123",                                              │
+│       email: "john@example.com"                                         │
+│     }, YOUR_VERIFICATION_SECRET)                                        │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│  2. Your Frontend passes this token to the Crow widget                  │
+│                                                                         │
+│     window.crow("identify", { token: token });                          │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│  3. Crow verifies the token using your verification_secret              │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│  4. When calling your API, Crow forwards the same token                 │
+│                                                                         │
+│     Authorization: Bearer <identity_token>                              │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│  5. Your API verifies the token (you signed it!) and identifies user    │
+│                                                                         │
+│     const payload = jwt.verify(token, YOUR_VERIFICATION_SECRET)         │
+│     const userId = payload.user_id  // "user_123"                       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Widget Integration
+
+The Crow widget is embedded via a script tag:
+
+```html
+<script
+  src="https://api.usecrow.ai/static/crow-widget.js"
+  data-api-url="https://api.usecrow.ai"
+  data-product-id="YOUR_PRODUCT_ID"
+></script>
+```
+
+After the user logs in to your app, identify them to Crow:
+
+```javascript
+// After user authentication in your app
+window.crow("identify", {
+  token: identityToken, // JWT from your backend
+  name: user.name, // Optional: for personalization
+});
+```
+
+To reset (e.g., on logout):
+
+```javascript
+window.crow("resetUser");
+```
+
+### OpenAPI Specification
+
+```yaml
+openapi: 3.0.3
+info:
+  title: My API
+  version: 1.0.0
+  description: API with user-specific endpoints authenticated via JWT
+
+components:
+  securitySchemes:
+    UserJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        User identity token forwarded by Crow.
+        This is the same JWT your backend signed for the user.
+        Verify it using your verification_secret.
+
+security:
+  - UserJWT: []
+
+paths:
+  /my/orders:
+    get:
+      operationId: getMyOrders
+      summary: Get the authenticated user's orders
+      description: Returns orders for the user identified by the JWT
+      security:
+        - UserJWT: []
+      responses:
+        '200':
+          description: User's orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: Invalid or expired token
+
+  /my/subscription:
+    delete:
+      operationId: cancelMySubscription
+      summary: Cancel the authenticated user's subscription
+      description: Cancels the subscription for the user identified by the JWT
+      security:
+        - UserJWT: []
+      responses:
+        '200':
+          description: Subscription cancelled
+        '401':
+          description: Invalid or expired token
+
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        total:
+          type: number
+```
+
+### Crow Configuration
+
+In the Crow dashboard under **Integrations > API Connection**:
+
+1. Select **JWT Forward (User Identity)** as the authentication type
+2. No additional configuration needed—the token comes from the widget user
+
+### Backend Implementation
+
+Your API endpoints need to verify the JWT and extract the user identity:
+
+<CodeGroup>
+
+```javascript Node.js / Express
+const jwt = require("jsonwebtoken");
+
+// Your verification secret (same one configured in Crow)
+const VERIFICATION_SECRET = process.env.CROW_VERIFICATION_SECRET;
+
+// Middleware to verify JWT and extract user
+function authenticateUser(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing authorization header" });
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer '
+
+  try {
+    const payload = jwt.verify(token, VERIFICATION_SECRET);
+    req.user = {
+      id: payload.user_id,
+      email: payload.email,
+      name: payload.name,
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
+
+// Example endpoint
+app.get("/my/orders", authenticateUser, async (req, res) => {
+  const orders = await db.orders.findMany({
+    where: { userId: req.user.id },
+  });
+  res.json(orders);
+});
+```
+
+```python Python / FastAPI
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+import os
+
+app = FastAPI()
+security = HTTPBearer()
+
+VERIFICATION_SECRET = os.environ.get("CROW_VERIFICATION_SECRET")
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT and extract user identity"""
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            VERIFICATION_SECRET,
+            algorithms=["HS256"]
+        )
+        return {
+            "id": payload["user_id"],
+            "email": payload.get("email"),
+            "name": payload.get("name")
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@app.get("/my/orders")
+async def get_my_orders(user: dict = Depends(get_current_user)):
+    orders = await db.get_orders_for_user(user["id"])
+    return orders
+
+@app.delete("/my/subscription")
+async def cancel_my_subscription(user: dict = Depends(get_current_user)):
+    await db.cancel_subscription(user["id"])
+    return {"status": "cancelled"}
+```
+
+</CodeGroup>
+
+### Important Notes
+
+1. **Anonymous Users**: When JWT Forward is configured, API tools are **only available to authenticated widget users**. Anonymous users will not see these tools. This is by design—there's no user identity to forward for anonymous users.
+
+2. **Token Expiration**: Crow does not check token expiration before forwarding. Your API should validate the token and return a `401` error if expired. The widget should refresh tokens before they expire.
+
+3. **Same Secret**: Use the **same verification secret** in your API that you configured in Crow. This is the secret you use to sign identity tokens for the widget.
+
+4. **Security**: Since your backend signed the JWT originally, you can trust it when it comes back. The token hasn't been modified because only you have the secret to sign valid tokens.
+
+---
+
+## Choosing the Right Authentication Method
+
+| Scenario                                                | Recommended Auth Type                        |
+| ------------------------------------------------------- | -------------------------------------------- |
+| Simple server-to-server integration                     | API Key                                      |
+| Using OAuth access token / service account              | Bearer Token                                 |
+| User-specific actions (orders, subscriptions, settings) | JWT Forward                                  |
+| Mixed: some endpoints need user identity, some don't    | JWT Forward (design your API to handle both) |
+
+---
+
+## Complete OpenAPI Example with JWT Forward
+
+Here's a full example of an OpenAPI specification for a customer support API that uses JWT Forward authentication:
+
+```yaml
+openapi: 3.0.3
+info:
+  title: Customer Support API
+  version: 1.0.0
+  description: |
+    API for customer support operations. All endpoints require user authentication
+    via JWT token forwarded by Crow.
+
+servers:
+  - url: https://api.yourcompany.com/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    UserJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token identifying the end-user.
+        Verify using your Crow verification_secret.
+
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique order identifier
+        status:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        total:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        product_name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+        plan:
+          type: string
+        status:
+          type: string
+          enum: [active, cancelled, past_due]
+        current_period_end:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        detail:
+          type: string
+
+security:
+  - UserJWT: []
+
+paths:
+  /my/orders:
+    get:
+      operationId: getMyOrders
+      summary: Get my orders
+      description: Retrieve all orders for the authenticated user
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, shipped, delivered, cancelled]
+          description: Filter by order status
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of orders to return
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /my/orders/{orderId}:
+    get:
+      operationId: getMyOrder
+      summary: Get order details
+      description: Get details for a specific order owned by the authenticated user
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The order ID
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+
+    delete:
+      operationId: cancelMyOrder
+      summary: Cancel my order
+      description: Cancel an order if it hasn't shipped yet
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  refund_status:
+                    type: string
+        "400":
+          description: Order cannot be cancelled (already shipped)
+
+  /my/subscription:
+    get:
+      operationId: getMySubscription
+      summary: Get my subscription
+      description: Get the current subscription for the authenticated user
+      responses:
+        "200":
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "404":
+          description: No active subscription
+
+    delete:
+      operationId: cancelMySubscription
+      summary: Cancel my subscription
+      description: Cancel the user's subscription at the end of the current billing period
+      responses:
+        "200":
+          description: Subscription will be cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  cancels_at:
+                    type: string
+                    format: date-time
+
+  /my/profile:
+    get:
+      operationId: getMyProfile
+      summary: Get my profile
+      description: Get the authenticated user's profile information
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+
+    patch:
+      operationId: updateMyProfile
+      summary: Update my profile
+      description: Update the authenticated user's profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Profile updated
+```
+
+---
+
+## Troubleshooting
+
+### "401 Unauthorized" errors
+
+1. **Check your verification secret**: Ensure your API uses the same secret that's configured in Crow
+2. **Check token expiration**: The JWT may have expired; verify the `exp` claim
+3. **Check the algorithm**: Crow uses HS256 for signing identity tokens
+
+### API tools not showing for users
+
+1. **JWT Forward + Anonymous users**: If using JWT Forward, anonymous users won't see API tools. This is expected behavior.
+2. **Check tool selection**: Ensure the tools are selected/enabled in the Crow dashboard
+
+### Token not being forwarded
+
+1. **Verify auth type**: Confirm "JWT Forward (User Identity)" is selected in the dashboard
+2. **Check identity token**: Ensure the widget is receiving a valid identity token from your frontend
+
+### "404 Not Found" errors on API calls
+
+**Common cause: Duplicate path prefix**
+
+If your API calls are hitting URLs like `/api/api/users` instead of `/api/users`, you have a path duplication issue.
+
+**The Problem:**
+
+- Your **Base URL** in Crow is set to: `https://api.example.com/api`
+- Your **OpenAPI paths** include: `/api/users`
+- **Result**: `https://api.example.com/api` + `/api/users` = `/api/api/users`
+
+**The Fix:**
+Choose ONE place for the prefix:
+
+**Option A (Recommended):** Put the prefix in the base URL, use relative paths in OpenAPI:
+
+```yaml
+# Base URL: https://api.example.com/api
+paths:
+  /users: # Not /api/users
+    get: ...
+  /orders: # Not /api/orders
+    get: ...
+```
+
+**Option B:** Use a bare base URL, put full paths in OpenAPI:
+
+```yaml
+# Base URL: https://api.example.com
+paths:
+  /api/users: # Full path including /api
+    get: ...
+  /api/orders:
+    get: ...
+```
+
+---
+
+## Summary
+
+| Auth Type    | Header Sent                     | Token Source                 | User-Specific |
+| ------------ | ------------------------------- | ---------------------------- | ------------- |
+| API Key      | `X-API-Key: <key>`              | Dashboard config             | No            |
+| Bearer Token | `Authorization: Bearer <token>` | Dashboard config             | No            |
+| JWT Forward  | `Authorization: Bearer <jwt>`   | Widget user's identity token | **Yes**       |
+
+For most support and customer-facing use cases, **JWT Forward** is recommended as it enables powerful user-specific actions while maintaining security.

@@ -18,7 +18,8 @@
             "pages": [
               "index",
               "embed-widget",
-              "identity-verification"
+              "identity-verification",
+              "openapi-authentication"
             ]
           }
         ]
