@@ -1,0 +1,72 @@
+---
+title: "Crow Docs MCP"
+description: "Connect Cursor to Crow's documentation using MCP"
+---
+
+The Model Context Protocol (MCP) allows you to connect AI tools like Cursor to Crow's documentation. Once connected, Cursor can help you integrate Crow into your codebase with full context of our APIs and features.
+
+## Installation
+
+<Card>
+  <div style={{ marginBottom: '16px' }}>
+    <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>Install in one click:</p>
+    <a 
+      href="cursor://anysphere.cursor-deeplink/mcp/install?name=crow&config=eyJ1cmwiOiJodHRwczovL2RvY3MudXNlY3Jvdy5haS9tY3AifQ=="
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 14px',
+        borderRadius: '6px',
+        backgroundColor: '#171717',
+        color: '#fff',
+        fontWeight: 500,
+        fontSize: '14px',
+        textDecoration: 'none',
+        border: '1px solid #333'
+      }}
+    >
+      <img src="/cursor_logo.png" alt="Cursor" width="16" height="16" style={{ borderRadius: '3px' }} />
+      Add to Cursor
+    </a>
+  </div>
+  
+  <div>
+    <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>
+      Or add this configuration to <code>.cursor/mcp.json</code>:
+    </p>
+  </div>
+</Card>
+
+```json
+{
+  "mcpServers": {
+    "crow": {
+      "url": "https://docs.usecrow.ai/mcp"
+    }
+  }
+}
+```
+
+## Verify connection
+
+After installation, verify the MCP server is connected:
+
+1. Open Cursor Settings (`Cmd/Ctrl + ,`)
+2. Navigate to **Cursor Settings → Tools & MCP**
+3. Confirm "crow" appears in the list of connected servers
+
+To test, try asking Cursor: *"How do I embed the Crow widget? Use MCP tools."*
+
+## What you can do
+
+With Crow MCP connected, you can ask Cursor to:
+
+- Help integrate the Crow widget into your website
+- Set up identity verification for authenticated users
+- Configure OpenAPI or MCP server integrations
+- Understand how to use Crow's features
+
+<Note>
+Need help? [View Cursor MCP docs](https://docs.cursor.com/tools/model-context-protocol)
+</Note>

@@ -15,7 +15,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["index", "quickstart"]
+            "pages": ["index", "quickstart", "crow-docs-mcp"]
           },
           {
             "group": "Setup",
