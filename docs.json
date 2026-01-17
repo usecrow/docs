@@ -15,7 +15,15 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["index", "quickstart", "embed-widget", "identity-verification"]
+            "pages": ["index", "quickstart"]
+          },
+          {
+            "group": "Setup",
+            "pages": ["embed-widget", "identity-verification", "deploy-overview"]
+          },
+          {
+            "group": "Agent",
+            "pages": ["sandbox-overview", "actions-overview", "workflows"]
           },
           {
             "group": "Knowledge Base",
@@ -26,12 +34,8 @@
             "pages": ["integration-overview", "openapi", "openapi-authentication", "mcp-servers"]
           },
           {
-            "group": "Agent",
-            "pages": ["sandbox-overview", "actions-overview", "workflows"]
-          },
-          {
             "group": "Monitor",
-            "pages": ["activity-overview", "deploy-overview"]
+            "pages": ["activity-overview"]
           }
         ]
       }
