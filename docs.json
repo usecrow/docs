@@ -3,12 +3,9 @@
   "theme": "mint",
   "name": "Crow",
   "colors": {
-    "primary": "#000000",
-    "light": "#000000",
-    "dark": "#FAFAFA",
-    "background": {
-      "dark": "#18181B"
-    }
+    "primary": "#18181B",
+    "light": "#18181B",
+    "dark": "#18181B"
   },
   "favicon": "/favicon.svg",
   "navigation": {
