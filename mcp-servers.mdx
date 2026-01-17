@@ -1,9 +1,18 @@
 ---
 title: "MCP Servers"
-description: "Connect Model Context Protocol servers"
+description: "Give your Crow agent access to MCP tools"
 ---
 
-MCP (Model Context Protocol) lets your agent connect to external services via a standard protocol.
+Give your Crow agent the ability to use tools from any MCP (Model Context Protocol) server. Once connected, your agent can call these tools to answer user questions and take actions.
+
+<Info>
+**What are MCP tools?** MCP is an open standard that lets AI agents connect to external services. By adding an MCP server, your Crow agent gains access to all tools that server exposes—no custom code required.
+</Info>
+
+**Example use cases:**
+- Connect a database MCP server so your agent can query customer data
+- Add a CRM server so your agent can look up and update contacts
+- Integrate internal APIs that already have MCP endpoints
 
 ## Add a Server
 
@@ -30,7 +39,7 @@ MCP (Model Context Protocol) lets your agent connect to external services via a 
 
 ## Configuring Tools
 
-After connecting, go to [Actions](https://app.usecrow.ai/actions) to toggle individual tools.
+After connecting, go to [Actions](https://app.usecrow.ai/actions) to enable or disable individual tools for your agent. Only enabled tools will be available when your agent responds to users.
 
 ## Pre-built Integrations
 
