@@ -10,6 +10,7 @@ Integrations let your agent take actions—not just answer questions.
 | Type | Best for | Setup |
 |------|----------|-------|
 | [OpenAPI](/openapi) | Your REST API | Upload spec file |
+| [Client Side](/client-side-tools) | Browser actions, UI interactions | Upload JSON + register handlers |
 | [MCP Servers](/mcp-servers) | Third-party services, complex integrations | Connect server URL |
 
 ## When to Use OpenAPI
@@ -17,6 +18,12 @@ Integrations let your agent take actions—not just answer questions.
 - You have a REST API with an OpenAPI/Swagger spec
 - You want your agent to call your backend (check orders, create tickets, etc.)
 - You need to authenticate requests with API keys or user tokens
+
+## When to Use Client Side
+
+- Actions that need browser access (navigation, DOM, local storage)
+- UI interactions (show modals, open forms, toggle features)
+- Actions that need your app's state (React router, Redux, Zustand)
 
 ## When to Use MCP
 
@@ -32,6 +39,12 @@ Integrations let your agent take actions—not just answer questions.
 - Look up customer info
 - Process refunds
 
+**Client Side:**
+- Navigate to pages
+- Show upgrade modal
+- Add items to cart
+- Toggle dark mode
+
 **MCP:**
 - Search Notion pages
 - Query databases
@@ -39,9 +52,12 @@ Integrations let your agent take actions—not just answer questions.
 
 ---
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="OpenAPI" icon="code" href="/openapi">
     Connect your REST API
+  </Card>
+  <Card title="Client Side" icon="mouse-pointer" href="/client-side-tools">
+    Browser actions
   </Card>
   <Card title="MCP Servers" icon="server" href="/mcp-servers">
     Connect MCP servers

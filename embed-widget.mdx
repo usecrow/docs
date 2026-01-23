@@ -109,6 +109,10 @@ window.crow('resetUser')
 
 Register client-side tools the agent can call. Useful for actions that need access to your app's state.
 
+<Note>
+First, define which tools your agent can use in [Integration → Client Side](/client-side-tools). Then register handlers here to execute them.
+</Note>
+
 ```javascript
 window.crow('registerTools', {
   getCurrentPage: async () => {

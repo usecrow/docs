@@ -71,36 +71,11 @@ paths:
 
 ## Client-Side Tools
 
-To let the agent trigger browser-side actions (like navigation), add paths prefixed with `/client/`:
+For browser-side actions (navigation, UI interactions), use the dedicated [Client Side](/client-side-tools) integration instead of OpenAPI.
 
-```yaml
-paths:
-  /client/navigateToPage:
-    post:
-      operationId: navigateToPage
-      summary: Navigate to a page
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                path:
-                  type: string
-```
-
-Then register the matching tool in your frontend:
-
-```javascript
-window.crow('registerTools', {
-  navigateToPage: async ({ path }) => {
-    router.push(path)
-    return { success: true }
-  }
-})
-```
-
-The `operationId` must match the key in `registerTools`.
+<Note>
+**Legacy support:** Tools previously defined in OpenAPI with a `/client/` server URL will continue to work and appear under Client-Side Tools in Actions. We recommend migrating to the dedicated Client Side integration for cleaner separation.
+</Note>
 
 ---
 

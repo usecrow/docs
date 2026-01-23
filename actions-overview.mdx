@@ -10,14 +10,16 @@ Actions are capabilities you enable for your agent. Go to [Actions](https://app.
 | Type | Source | Example |
 |------|--------|---------|
 | **API Tools** | Your OpenAPI spec | `getOrderStatus`, `createTicket` |
+| **Client Tools** | Client Side integration | `navigateToPage`, `showModal` |
 | **MCP Tools** | Connected MCP servers | Notion search, database queries |
 | **Workflows** | You define them | Onboarding flow, return request |
 
 ## Enabling Actions
 
 1. **API Tools** — Check/uncheck individual endpoints from your OpenAPI spec
-2. **MCP Tools** — Toggle entire servers or individual tools
-3. **Workflows** — Enable/disable specific flows
+2. **Client Tools** — Configured via Integration → Client Side
+3. **MCP Tools** — Toggle entire servers or individual tools
+4. **Workflows** — Enable/disable specific flows
 
 ## How the Agent Decides
 
@@ -36,9 +38,12 @@ Good tool descriptions → better tool selection.
 
 ---
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="OpenAPI" icon="code" href="/openapi">
     Set up API tools
+  </Card>
+  <Card title="Client Side" icon="mouse-pointer" href="/client-side-tools">
+    Browser actions
   </Card>
   <Card title="Workflows" icon="route" href="/workflows">
     Create guided flows
