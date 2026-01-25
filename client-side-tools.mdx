@@ -20,8 +20,8 @@ sequenceDiagram
 ```
 
 1. **Define tools** — Upload a JSON spec describing available client-side actions
-2. **Register handlers** — Implement the actual functions in your frontend
-3. **Agent calls them** — When appropriate, the agent triggers your handlers
+2. **Register handlers** — Implement the functions in your frontend
+3. **Agent calls them** — The agent triggers your handlers when appropriate
 
 ---
 
@@ -68,30 +68,109 @@ In **Integration** → **Client Side**:
 
 ### 3. Register Handlers
 
-In your frontend, register functions that execute when the agent calls each tool:
+Implement the functions that execute when the agent calls each tool:
 
-```javascript
-window.crow('registerTools', {
-  navigateToPage: async ({ path }) => {
-    // Use your app's router
-    router.push(path)
-    return { success: true }
-  },
-  
-  showUpgradeModal: async () => {
-    document.getElementById('upgrade-modal').showModal()
-    return { shown: true }
-  }
-})
-```
+<Tabs>
+  <Tab title="Script Tag">
+    ```javascript
+    window.crow('registerTools', {
+      navigateToPage: async ({ path }) => {
+        router.push(path)
+        return { success: true }
+      },
+      
+      showUpgradeModal: async () => {
+        document.getElementById('upgrade-modal').showModal()
+        return { shown: true }
+      }
+    })
+    ```
+
+    <Accordion title="React/SPA timing">
+    Wait for the widget to load:
+    ```javascript
+    useEffect(() => {
+      const i = setInterval(() => {
+        if (!window.crow) return
+        window.crow('registerTools', { /* your tools */ })
+        clearInterval(i)
+      }, 100)
+      return () => clearInterval(i)
+    }, [])
+    ```
+    </Accordion>
+  </Tab>
+
+  <Tab title="React SDK">
+    ```tsx
+    import { CrowWidget } from '@usecrow/ui';
+    import '@usecrow/ui/styles.css';
+
+    function App() {
+      const tools = {
+        navigateToPage: async ({ path }) => {
+          router.push(path);
+          return { success: true };
+        },
+        
+        showUpgradeModal: async () => {
+          document.getElementById('upgrade-modal').showModal();
+          return { shown: true };
+        }
+      };
+
+      return (
+        <CrowWidget
+          productId="YOUR_PRODUCT_ID"
+          apiUrl="https://api.usecrow.org"
+          tools={tools}
+        />
+      );
+    }
+    ```
+
+    <Accordion title="With CrowProvider">
+    When using multiple components:
+    ```tsx
+    import { CrowProvider, CrowCopilot, useCrowClient } from '@usecrow/ui';
+    import { useEffect } from 'react';
+
+    function ToolRegistration() {
+      const client = useCrowClient();
+      
+      useEffect(() => {
+        client.registerTools({
+          navigateToPage: async ({ path }) => {
+            router.push(path);
+            return { success: true };
+          }
+        });
+      }, [client]);
+
+      return null;
+    }
+
+    function App() {
+      return (
+        <CrowProvider productId="YOUR_PRODUCT_ID" apiUrl="https://api.usecrow.org">
+          <ToolRegistration />
+          <YourApp />
+          <CrowCopilot position="right" />
+        </CrowProvider>
+      );
+    }
+    ```
+    </Accordion>
+  </Tab>
+</Tabs>
 
 <Warning>
-The tool `name` in your JSON spec must exactly match the key in `registerTools`.
+The tool `name` in your JSON spec must exactly match the key in your handlers.
 </Warning>
 
-### 4. Enable in Actions
+### 4. Verify in Dashboard
 
-Go to [Actions](https://app.usecrow.ai/actions) to verify your client tools are listed under **Client-Side Tools**.
+Go to [Actions](https://app.usecrow.ai/actions) to confirm your client tools are listed under **Client-Side Tools**.
 
 ---
 
@@ -116,14 +195,30 @@ Go to [Actions](https://app.usecrow.ai/actions) to verify your client tools are 
 }
 ```
 
-```javascript
-window.crow('registerTools', {
-  navigateToPage: async ({ path }) => {
-    router.push(path)
-    return { success: true }
-  }
-})
-```
+<Tabs>
+  <Tab title="Script Tag">
+    ```javascript
+    window.crow('registerTools', {
+      navigateToPage: async ({ path }) => {
+        router.push(path)
+        return { success: true }
+      }
+    })
+    ```
+  </Tab>
+  <Tab title="React SDK">
+    ```tsx
+    const tools = {
+      navigateToPage: async ({ path }) => {
+        router.push(path);
+        return { success: true };
+      }
+    };
+    
+    <CrowWidget tools={tools} /* ... */ />
+    ```
+  </Tab>
+</Tabs>
 
 ### UI Actions
 
@@ -143,14 +238,30 @@ window.crow('registerTools', {
 }
 ```
 
-```javascript
-window.crow('registerTools', {
-  openContactForm: async ({ subject }) => {
-    openModal('contact', { subject })
-    return { opened: true }
-  }
-})
-```
+<Tabs>
+  <Tab title="Script Tag">
+    ```javascript
+    window.crow('registerTools', {
+      openContactForm: async ({ subject }) => {
+        openModal('contact', { subject })
+        return { opened: true }
+      }
+    })
+    ```
+  </Tab>
+  <Tab title="React SDK">
+    ```tsx
+    const tools = {
+      openContactForm: async ({ subject }) => {
+        openModal('contact', { subject });
+        return { opened: true };
+      }
+    };
+    
+    <CrowWidget tools={tools} /* ... */ />
+    ```
+  </Tab>
+</Tabs>
 
 ### App State
 
@@ -161,28 +272,38 @@ window.crow('registerTools', {
   "parameters": {
     "type": "object",
     "properties": {
-      "productId": {
-        "type": "string",
-        "description": "The product ID to add"
-      },
-      "quantity": {
-        "type": "integer",
-        "description": "Number of items (default 1)"
-      }
+      "productId": { "type": "string", "description": "The product ID" },
+      "quantity": { "type": "integer", "description": "Number of items (default 1)" }
     },
     "required": ["productId"]
   }
 }
 ```
 
-```javascript
-window.crow('registerTools', {
-  addToCart: async ({ productId, quantity = 1 }) => {
-    await cartStore.add(productId, quantity)
-    return { success: true }
-  }
-})
-```
+<Tabs>
+  <Tab title="Script Tag">
+    ```javascript
+    window.crow('registerTools', {
+      addToCart: async ({ productId, quantity = 1 }) => {
+        await cartStore.add(productId, quantity)
+        return { success: true }
+      }
+    })
+    ```
+  </Tab>
+  <Tab title="React SDK">
+    ```tsx
+    const tools = {
+      addToCart: async ({ productId, quantity = 1 }) => {
+        await cartStore.add(productId, quantity);
+        return { success: true };
+      }
+    };
+    
+    <CrowWidget tools={tools} /* ... */ />
+    ```
+  </Tab>
+</Tabs>
 
 ---
 
@@ -192,24 +313,9 @@ Client-side tools use the [OpenAI function calling format](https://platform.open
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Unique tool identifier (used in `registerTools`) |
+| `name` | string | Yes | Unique tool identifier |
 | `description` | string | Yes | When to use this tool—be specific |
 | `parameters` | object | Yes | JSON Schema for parameters |
-
-### Parameters Schema
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "paramName": {
-      "type": "string",
-      "description": "What this parameter does"
-    }
-  },
-  "required": ["paramName"]
-}
-```
 
 Supported types: `string`, `number`, `integer`, `boolean`, `array`, `object`
 
@@ -217,9 +323,9 @@ Supported types: `string`, `number`, `integer`, `boolean`, `array`, `object`
 
 ## Best Practices
 
-- **Descriptive names** — `navigateToSettings` is clearer than `nav1`
+- **Descriptive names** — `navigateToSettings` beats `nav1`
 - **Detailed descriptions** — Tell the agent exactly when to use each tool
-- **List valid values** — "Use for: settings, orders, profile" helps the agent choose correctly
+- **List valid values** — "Use for: settings, orders, profile" helps the agent choose
 - **Handle errors** — Your handlers should gracefully handle edge cases
 
 ---
@@ -230,18 +336,14 @@ Supported types: `string`, `number`, `integer`, `boolean`, `array`, `object`
 |-------|----------|
 | Tool not appearing | Check JSON syntax, ensure `name` field exists |
 | Agent not calling tool | Improve the `description` to better match user queries |
-| Handler not executing | Verify `name` in spec matches key in `registerTools` exactly |
+| Handler not executing | Verify `name` in spec matches key in handlers exactly |
 | Parameters missing | Check `required` array in your spec |
-
-<Note>
-Client tools run in the browser and are currently fire-and-forget—the agent triggers them but doesn't see return values. Interested in bidirectional results? [Book a demo](https://cal.com/aryan-vij-wpimwt/30min).
-</Note>
 
 ---
 
 <CardGroup cols={2}>
   <Card title="Embed Widget" icon="code" href="/embed-widget">
-    Full JavaScript API reference
+    Full installation guide
   </Card>
   <Card title="OpenAPI" icon="server" href="/openapi">
     Connect your backend API

@@ -5,153 +5,205 @@ description: "Add the Crow widget to your website"
 
 ## Installation
 
-<CodeGroup>
+Choose your preferred installation method:
 
-```html HTML
-<!-- Add before </body> -->
-<script
-  src="https://api.usecrow.org/static/crow-widget.js"
-  data-api-url="https://api.usecrow.org"
-  data-product-id="YOUR_PRODUCT_ID"
-  data-agent-name="Your Agent Name"
-></script>
-```
+<Tabs>
+  <Tab title="Script Tag">
+    Add the script before `</body>`:
 
-```jsx React
-// _app.tsx or layout.tsx
-import Script from 'next/script'
+    <CodeGroup>
 
-export default function Layout({ children }) {
-  return (
-    <>
-      {children}
-      <Script
-        src="https://api.usecrow.org/static/crow-widget.js"
-        data-api-url="https://api.usecrow.org"
-        data-product-id="YOUR_PRODUCT_ID"
-        data-agent-name="Your Agent Name"
-        strategy="afterInteractive"
-      />
-    </>
-  )
-}
-```
+    ```html HTML
+    <script
+      src="https://api.usecrow.org/static/crow-widget.js"
+      data-api-url="https://api.usecrow.org"
+      data-product-id="YOUR_PRODUCT_ID"
+      data-agent-name="Your Agent Name"
+    ></script>
+    ```
 
-```vue Vue
-<script setup>
-import { onMounted } from 'vue'
+    ```jsx Next.js
+    import Script from 'next/script'
 
-onMounted(() => {
-  const script = document.createElement('script')
-  script.src = 'https://api.usecrow.org/static/crow-widget.js'
-  script.setAttribute('data-api-url', 'https://api.usecrow.org')
-  script.setAttribute('data-product-id', 'YOUR_PRODUCT_ID')
-  script.setAttribute('data-agent-name', 'Your Agent Name')
-  document.body.appendChild(script)
-})
-</script>
-```
+    export default function Layout({ children }) {
+      return (
+        <>
+          {children}
+          <Script
+            src="https://api.usecrow.org/static/crow-widget.js"
+            data-api-url="https://api.usecrow.org"
+            data-product-id="YOUR_PRODUCT_ID"
+            data-agent-name="Your Agent Name"
+            strategy="afterInteractive"
+          />
+        </>
+      )
+    }
+    ```
 
-```svelte Svelte
-<script>
-  import { onMount } from 'svelte'
+    </CodeGroup>
 
-  onMount(() => {
-    const script = document.createElement('script')
-    script.src = 'https://api.usecrow.org/static/crow-widget.js'
-    script.setAttribute('data-api-url', 'https://api.usecrow.org')
-    script.setAttribute('data-product-id', 'YOUR_PRODUCT_ID')
-    script.setAttribute('data-agent-name', 'Your Agent Name')
-    document.body.appendChild(script)
-  })
-</script>
-```
+    | Attribute | Required | Description |
+    |-----------|----------|-------------|
+    | `data-api-url` | Yes | `https://api.usecrow.org` |
+    | `data-product-id` | Yes | Your product ID from dashboard |
+    | `data-agent-name` | No | Display name (defaults to "Assistant") |
+  </Tab>
 
-</CodeGroup>
+  <Tab title="React SDK">
+    Install the SDK:
 
-## Script Attributes
+    ```bash
+    npm install @usecrow/client @usecrow/ui
+    ```
 
-| Attribute | Required | Description |
-|-----------|----------|-------------|
-| `src` | Yes | Widget script URL |
-| `data-api-url` | Yes | `https://api.usecrow.org` |
-| `data-product-id` | Yes | Your product ID from dashboard |
-| `data-agent-name` | No | Display name for your agent (defaults to "Assistant") |
+    Add to your app:
+
+    ```tsx
+    'use client';
+
+    import { CrowWidget } from '@usecrow/ui';
+    import '@usecrow/ui/styles.css';
+
+    export function CrowWidgetClient() {
+      return (
+        <CrowWidget
+          productId="YOUR_PRODUCT_ID"
+          apiUrl="https://api.usecrow.org"
+          agentName="Your Agent Name"
+        />
+      );
+    }
+    ```
+
+    | Prop | Required | Description |
+    |------|----------|-------------|
+    | `productId` | Yes | Your product ID from dashboard |
+    | `apiUrl` | Yes | `https://api.usecrow.org` |
+    | `agentName` | No | Display name (defaults to "Assistant") |
+
+    <Accordion title="Copilot Sidebar">
+    The SDK also includes a sidebar component:
+
+    ```tsx
+    import { CrowProvider, CrowCopilot } from '@usecrow/ui';
+    import '@usecrow/ui/styles.css';
+
+    export function App() {
+      return (
+        <CrowProvider productId="YOUR_PRODUCT_ID" apiUrl="https://api.usecrow.org">
+          <YourApp />
+          <CrowCopilot position="right" width={400} />
+        </CrowProvider>
+      );
+    }
+    ```
+    </Accordion>
+  </Tab>
+</Tabs>
 
 ## Find Your Product ID
 
 1. Go to [app.usecrow.ai/deploy](https://app.usecrow.ai/deploy)
-2. Copy your Product ID and replace `YOUR_PRODUCT_ID` in the script tag above
+2. Copy your Product ID
 
 ---
 
-## JavaScript API
+## User Identity
 
-The widget exposes `window.crow()` for programmatic control.
+Authenticate users for persistent conversations and user-specific actions.
 
-### identify
+<Tabs>
+  <Tab title="Script Tag">
+    ```javascript
+    window.crow('identify', {
+      token: 'jwt-from-your-backend',  // Required
+      name: 'John Doe'                  // Optional
+    })
 
-Authenticate the current user. Enables persistent conversations and user-specific actions.
+    // On logout
+    window.crow('resetUser')
+    ```
+  </Tab>
 
-```javascript
-window.crow('identify', {
-  token: 'jwt-from-your-backend',  // Required
-  name: 'John Doe'                  // Optional, shown in chat
-})
-```
+  <Tab title="React SDK">
+    ```tsx
+    import { CrowWidget } from '@usecrow/ui';
 
-See [Identity Verification](/identity-verification) for backend setup.
+    function App() {
+      const handleIdentify = (identify) => {
+        // Call when user logs in
+        identify({
+          token: 'jwt-from-your-backend',
+          name: 'John Doe'
+        });
+      };
 
-### resetUser
+      return (
+        <CrowWidget
+          productId="YOUR_PRODUCT_ID"
+          apiUrl="https://api.usecrow.org"
+          onIdentify={handleIdentify}
+        />
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
 
-Clear user identity (call on logout).
+See [Identity Verification](/identity-verification) for backend JWT setup.
 
-```javascript
-window.crow('resetUser')
-```
+---
 
-### registerTools
+## Client-Side Tools
 
-Register client-side tools the agent can call. Useful for actions that need access to your app's state.
+Register tools the agent can call. See [Client-Side Tools](/client-side-tools) for full setup.
 
-<Note>
-First, define which tools your agent can use in [Integration → Client Side](/client-side-tools). Then register handlers here to execute them.
-</Note>
+<Tabs>
+  <Tab title="Script Tag">
+    ```javascript
+    window.crow('registerTools', {
+      navigateToPage: async ({ path }) => {
+        router.push(path)
+        return { success: true }
+      },
+      
+      showUpgradeModal: async () => {
+        document.getElementById('upgrade-modal').showModal()
+        return { shown: true }
+      }
+    })
+    ```
+  </Tab>
 
-```javascript
-window.crow('registerTools', {
-  getCurrentPage: async () => {
-    return { page: window.location.pathname }
-  },
-  
-  addToCart: async ({ productId, quantity }) => {
-    await yourCartAPI.add(productId, quantity)
-    return { success: true }
-  },
-  
-  showUpgradeModal: async () => {
-    document.getElementById('upgrade-modal').showModal()
-    return { shown: true }
-  }
-})
-```
+  <Tab title="React SDK">
+    ```tsx
+    import { CrowWidget } from '@usecrow/ui';
 
-<Accordion title="React/SPA">
-```javascript
-useEffect(() => {
-  const i = setInterval(() => {
-    if (!window.crow) return
-    window.crow('registerTools', { /* your tools */ })
-    clearInterval(i)
-  }, 100)
-  return () => clearInterval(i)
-}, [])
-```
-</Accordion>
+    function App() {
+      const tools = {
+        navigateToPage: async ({ path }) => {
+          router.push(path);
+          return { success: true };
+        },
+        
+        showUpgradeModal: async () => {
+          document.getElementById('upgrade-modal').showModal();
+          return { shown: true };
+        }
+      };
 
-<Note>
-Client tools run in the browser. Currently fire-and-forget—the agent triggers them but doesn't see the return value. Interested in bidirectional tool results? [Book a demo](https://cal.com/aryan-vij-wpimwt/30min).
-</Note>
+      return (
+        <CrowWidget
+          productId="YOUR_PRODUCT_ID"
+          apiUrl="https://api.usecrow.org"
+          tools={tools}
+        />
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
 
 ---
 
@@ -159,6 +211,6 @@ Client tools run in the browser. Currently fire-and-forget—the agent triggers 
 
 | Issue | Solution |
 |-------|----------|
-| Widget not appearing | Check script is inside `<body>`, verify Product ID |
-| Console errors | Check `data-api-url` is correct |
+| Widget not appearing | Check Product ID, verify script/component is rendered |
+| Console errors | Check `apiUrl` is correct |
 | CORS errors | Contact support to whitelist your domain |
