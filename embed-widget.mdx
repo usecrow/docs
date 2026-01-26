@@ -157,7 +157,9 @@ See [Identity Verification](/identity-verification) for backend JWT setup.
 
 ## Client-Side Tools
 
-Register tools the agent can call. See [Client-Side Tools](/client-side-tools) for full setup.
+Register tools the agent can call. The return value from your handler is sent back to the agent, so it can confirm success or handle errors intelligently.
+
+See [Client-Side Tools](/client-side-tools) for full setup.
 
 <Tabs>
   <Tab title="Script Tag">
@@ -165,7 +167,7 @@ Register tools the agent can call. See [Client-Side Tools](/client-side-tools) f
     window.crow('registerTools', {
       navigateToPage: async ({ path }) => {
         router.push(path)
-        return { success: true }
+        return { success: true }  // Agent sees this result
       },
       
       showUpgradeModal: async () => {
@@ -184,7 +186,7 @@ Register tools the agent can call. See [Client-Side Tools](/client-side-tools) f
       const tools = {
         navigateToPage: async ({ path }) => {
           router.push(path);
-          return { success: true };
+          return { success: true };  // Agent sees this result
         },
         
         showUpgradeModal: async () => {
@@ -204,6 +206,10 @@ Register tools the agent can call. See [Client-Side Tools](/client-side-tools) f
     ```
   </Tab>
 </Tabs>
+
+<Tip>
+Return meaningful results from your tools. The agent uses these to provide accurate feedback like "Done! I've navigated you to Settings" or handle errors gracefully.
+</Tip>
 
 ---
 

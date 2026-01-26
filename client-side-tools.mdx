@@ -16,12 +16,14 @@ sequenceDiagram
     User->>Agent: "Go to my settings"
     Agent->>Browser: navigateToPage({ path: "/settings" })
     Browser->>Browser: router.push("/settings")
-    Browser-->>User: Page navigates
+    Browser-->>Agent: { success: true }
+    Agent-->>User: "Done! I've navigated you to Settings."
 ```
 
 1. **Define tools** — Upload a JSON spec describing available client-side actions
 2. **Register handlers** — Implement the functions in your frontend
 3. **Agent calls them** — The agent triggers your handlers when appropriate
+4. **Agent sees results** — Your handler's return value is sent back to the agent, so it can confirm success or handle errors
 
 ---
 
@@ -327,6 +329,101 @@ Supported types: `string`, `number`, `integer`, `boolean`, `array`, `object`
 - **Detailed descriptions** — Tell the agent exactly when to use each tool
 - **List valid values** — "Use for: settings, orders, profile" helps the agent choose
 - **Handle errors** — Your handlers should gracefully handle edge cases
+- **Return meaningful results** — The agent sees your return value and can react accordingly
+
+---
+
+## Tool Results
+
+The agent sees whatever your tool handler returns. This enables the agent to confirm success, handle errors, and provide relevant follow-up responses.
+
+### Return Format
+
+Your handlers should return an object describing the outcome:
+
+```javascript
+// Success
+return { success: true, data: { ... } }
+
+// Error
+return { success: false, error: "Page not found" }
+```
+
+### Examples
+
+**Success with context:**
+```javascript
+navigateToPage: async ({ path }) => {
+  router.push(path);
+  return { 
+    success: true, 
+    navigatedTo: path,
+    pageTitle: document.title 
+  };
+}
+```
+
+**Error handling:**
+```javascript
+navigateToPage: async ({ path }) => {
+  const validPaths = ['/settings', '/orders', '/profile'];
+  if (!validPaths.includes(path)) {
+    return { 
+      success: false, 
+      error: `Page "${path}" not found`,
+      validPaths 
+    };
+  }
+  router.push(path);
+  return { success: true };
+}
+```
+
+<Info>
+If your handler throws an exception, the SDK automatically catches it and sends an error result to the agent. You don't need to wrap everything in try/catch unless you want custom error messages.
+</Info>
+
+### What the Agent Sees
+
+| Your Handler Returns | Agent Response |
+|---------------------|----------------|
+| `{ success: true }` | "Done! I've navigated you to Settings." |
+| `{ success: false, error: "Page not found" }` | "I tried to navigate but that page doesn't exist. Would you like me to show you the available pages?" |
+| *Exception thrown* | "I encountered an error trying to navigate. Let me try something else." |
+
+### Agent Feedback Flow
+
+When a client-side tool executes, the agent follows a two-step response pattern:
+
+1. **Acknowledge** — "I'm navigating you to Settings now..."
+2. **Confirm** — After receiving the result: "Done! You're now on the Settings page."
+
+This ensures users see immediate feedback while the action executes.
+
+### Automatic Retries
+
+If your tool returns an error, the agent can automatically retry with corrected parameters:
+
+```javascript
+navigateToPage: async ({ page }) => {
+  const validPages = ['settings', 'orders', 'profile'];
+  if (!validPages.includes(page)) {
+    return { 
+      success: false, 
+      error: `Invalid page "${page}". Valid options: ${validPages.join(', ')}` 
+    };
+  }
+  router.push(`/${page}`);
+  return { success: true };
+}
+```
+
+**User:** "Go to production"  
+**Agent:** "I'm navigating you there now..."  
+**Agent:** "That page doesn't exist. Let me try navigating to Settings instead..."  
+**Agent:** "Done! You're now on Settings."
+
+The agent decides whether to retry based on the error message—no configuration needed.
 
 ---
 
