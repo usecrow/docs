@@ -1,0 +1,176 @@
+---
+title: "Event Callbacks"
+description: "Listen to agent events — messages, tool calls, errors, and more"
+---
+
+Hook into the agent's lifecycle to build custom experiences on top of Crow.
+
+## Available Callbacks
+
+| Callback | Fires when |
+|----------|-----------|
+| `onMessage` | A new message (user or assistant) is added |
+| `onMessageUpdate` | A message is updated (e.g. during streaming) |
+| `onToolCall` | A tool starts, completes, or a client tool is invoked |
+| `onWorkflow` | A workflow starts, progresses, or ends |
+| `onVerificationStatus` | Identity verification status changes |
+| `onError` | An error occurs |
+
+## React SDK
+
+Pass callbacks via the `client.on()` method:
+
+```tsx
+import { CrowClient } from '@usecrow/client';
+
+const client = new CrowClient({
+  productId: 'YOUR_PRODUCT_ID',
+  apiUrl: 'https://api.usecrow.org',
+});
+
+client.on({
+  onMessage: (message) => {
+    console.log(`[${message.role}] ${message.content}`);
+  },
+
+  onToolCall: (event) => {
+    if (event.type === 'tool_call_start') {
+      console.log(`Tool started: ${event.toolName}`);
+    }
+    if (event.type === 'tool_call_complete') {
+      console.log(`Tool done: ${event.toolName}`, event.success);
+    }
+  },
+
+  onError: (error) => {
+    myErrorTracker.capture(error);
+  },
+});
+```
+
+## Callback Reference
+
+### onMessage
+
+```typescript
+onMessage?: (message: Message) => void
+```
+
+Fired when a new message is added to the conversation.
+
+```typescript
+interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+  citations?: Citation[];
+  thinking?: string;
+}
+```
+
+### onMessageUpdate
+
+```typescript
+onMessageUpdate?: (messageId: string, updates: Partial<Message>) => void
+```
+
+Fired when a message is updated — typically during streaming as the assistant's response accumulates.
+
+### onToolCall
+
+```typescript
+onToolCall?: (event: ToolCallEvent) => void
+```
+
+Fired on tool lifecycle events:
+
+| `event.type` | Description |
+|-------------|-------------|
+| `tool_call_start` | Server-side tool invocation began |
+| `tool_call_complete` | Server-side tool finished (`event.success`) |
+| `client_tool_call` | Client-side tool was invoked in the browser |
+
+### onWorkflow
+
+```typescript
+onWorkflow?: (event: WorkflowEvent) => void
+```
+
+| `event.type` | Description |
+|-------------|-------------|
+| `workflow_started` | Workflow began (`event.name`, `event.todos`) |
+| `workflow_todo_updated` | A step completed (`event.todoId`, `event.status`) |
+| `workflow_ended` | Workflow finished |
+| `workflow_complete_prompt` | Workflow requests user confirmation |
+
+### onVerificationStatus
+
+```typescript
+onVerificationStatus?: (isVerified: boolean) => void
+```
+
+Fired when the user's identity verification status changes — useful for gating features behind verified users.
+
+### onError
+
+```typescript
+onError?: (error: Error) => void
+```
+
+Fired on any error during streaming or tool execution.
+
+---
+
+## Use Cases
+
+**Analytics** — Track which tools are used and how often:
+
+```typescript
+client.on({
+  onToolCall: (event) => {
+    if (event.type === 'tool_call_complete') {
+      analytics.track('crow_tool_used', {
+        tool: event.toolName,
+        success: event.success,
+      });
+    }
+  },
+});
+```
+
+**Custom loading states** — Show your own UI while tools run:
+
+```typescript
+client.on({
+  onToolCall: (event) => {
+    if (event.type === 'tool_call_start') {
+      showToolSpinner(event.toolName);
+    }
+    if (event.type === 'tool_call_complete') {
+      hideToolSpinner();
+    }
+  },
+});
+```
+
+**Error reporting** — Pipe errors to your observability stack:
+
+```typescript
+client.on({
+  onError: (error) => {
+    Sentry.captureException(error);
+  },
+});
+```
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Client Side Tools" icon="mouse-pointer" href="/client-side-tools">
+    Register browser-side tool handlers
+  </Card>
+  <Card title="Embed Widget" icon="code" href="/embed-widget">
+    Install the widget
+  </Card>
+</CardGroup>

@@ -81,6 +81,8 @@ Choose your preferred installation method:
     | `productId` | Yes | Your product ID from dashboard |
     | `apiUrl` | Yes | `https://api.usecrow.org` |
     | `agentName` | No | Display name (defaults to "Assistant") |
+    | `toolRenderers` | No | Map of tool name → React component for inline rendering. See [Tool Renderers](/tool-renderers) |
+    | `onToolResult` | No | Callback `(toolName, result) => void` fired when a server-side tool completes |
 
     <Accordion title="Copilot Sidebar">
     The SDK also includes a sidebar component:
