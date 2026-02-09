@@ -81,22 +81,40 @@ Choose your preferred installation method:
     | `productId` | Yes | Your product ID from dashboard |
     | `apiUrl` | Yes | `https://api.usecrow.org` |
     | `agentName` | No | Display name (defaults to "Assistant") |
+    | `getIdentityToken` | No | Async function returning a JWT. Auto-refreshes on expiry. See [Identity Verification](/identity-verification) |
+    | `context` | No | Page context object sent with every message. Reactive — updates when the object changes |
     | `toolRenderers` | No | Map of tool name → React component for inline rendering. See [Tool Renderers](/tool-renderers) |
     | `onToolResult` | No | Callback `(toolName, result) => void` fired when a server-side tool completes |
+    | `navigate` | No | SPA navigation function (e.g. `router.push`) for internal links |
 
     <Accordion title="Copilot Sidebar">
-    The SDK also includes a sidebar component:
+    The SDK also includes a sidebar component — no provider wrapping needed:
 
     ```tsx
-    import { CrowProvider, CrowCopilot } from '@usecrow/ui';
+    'use client';
+
+    import { CrowCopilot } from '@usecrow/ui';
     import '@usecrow/ui/styles.css';
 
     export function App() {
       return (
-        <CrowProvider productId="YOUR_PRODUCT_ID" apiUrl="https://api.usecrow.org">
+        <>
           <YourApp />
-          <CrowCopilot position="right" width={400} />
-        </CrowProvider>
+          <CrowCopilot
+            productId="YOUR_PRODUCT_ID"
+            apiUrl="https://api.usecrow.org"
+            variant="floating"
+            position="right"
+            width={400}
+            getIdentityToken={async () => {
+              const res = await fetch('/api/crow-token');
+              const { token } = await res.json();
+              return token;
+            }}
+            context={{ pageId: 'current-page-id' }}
+            navigate={(path) => router.push(path)}
+          />
+        </>
       );
     }
     ```
@@ -129,23 +147,21 @@ Authenticate users for persistent conversations and user-specific actions.
   </Tab>
 
   <Tab title="React SDK">
+    Pass `getIdentityToken` — the SDK handles calling it on mount and auto-refreshing on expiry:
+
     ```tsx
     import { CrowWidget } from '@usecrow/ui';
 
     function App() {
-      const handleIdentify = (identify) => {
-        // Call when user logs in
-        identify({
-          token: 'jwt-from-your-backend',
-          name: 'John Doe'
-        });
-      };
-
       return (
         <CrowWidget
           productId="YOUR_PRODUCT_ID"
           apiUrl="https://api.usecrow.org"
-          onIdentify={handleIdentify}
+          getIdentityToken={async () => {
+            const res = await fetch('/api/crow-token');
+            const { token } = await res.json();
+            return token;
+          }}
         />
       );
     }
@@ -161,7 +177,6 @@ See [Identity Verification](/identity-verification) for backend JWT setup.
 
 Register tools the agent can call. The return value from your handler is sent back to the agent, so it can confirm success or handle errors intelligently.
 
-<<<<<<< Updated upstream
 See [Client-Side Tools](/client-side-tools) for full setup.
 
 <Tabs>
@@ -180,25 +195,6 @@ See [Client-Side Tools](/client-side-tools) for full setup.
     })
     ```
   </Tab>
-=======
-```javascript
-window.crow('registerTools', {
-  getCurrentPage: async () => {
-    return { page: window.location.pathname }
-  },
-  
-  addToCart: async ({ productId, quantity }) => {
-    await yourCartAPI.add(productId, quantity)
-    return { success: true }
-  },
-  
-  showUpgradeModal: async () => {
-    document.getElementById('upgrade-modal').showModal()
-    return { shown: true }
-  }
-})
-```
->>>>>>> Stashed changes
 
   <Tab title="React SDK">
     ```tsx

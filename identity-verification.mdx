@@ -119,70 +119,71 @@ def get_crow_token():
 
 ## 3. Identify in Frontend
 
-<CodeGroup>
+<Tabs>
+  <Tab title="React SDK (Recommended)">
+    Pass `getIdentityToken` to `CrowWidget` or `CrowCopilot`. The SDK calls it on mount and auto-refreshes when the token expires — no manual polling needed.
 
-```javascript Vanilla JS
-async function identifyToCrow() {
-  const res = await fetch('/api/crow-token', {
-    headers: { Authorization: `Bearer ${yourAuthToken}` }
-  })
-  const { token } = await res.json()
-  
-  window.crow('identify', { token, name: userName })
-}
+    ```tsx
+    import { CrowWidget } from '@usecrow/ui';
 
-// Call after login or on page load if already logged in
-identifyToCrow()
-```
+    function App() {
+      return (
+        <CrowWidget
+          productId="YOUR_PRODUCT_ID"
+          apiUrl="https://api.usecrow.org"
+          getIdentityToken={async () => {
+            const res = await fetch('/api/crow-token');
+            const { token } = await res.json();
+            return token;
+          }}
+        />
+      );
+    }
+    ```
 
-```jsx React
-import { useEffect } from 'react'
-import { useAuth } from './your-auth-hook'
+    That's it. No `useEffect`, no `setInterval`, no `window.crow('identify')` calls.
+  </Tab>
 
-function App() {
-  const { user, isAuthenticated, getAuthToken } = useAuth()
-
-  useEffect(() => {
-    if (!isAuthenticated) return
-    
-    fetch('/api/crow-token', {
-      headers: { Authorization: `Bearer ${await getAuthToken()}` }
-    })
-      .then(res => res.json())
-      .then(({ token }) => {
-        window.crow('identify', { token, name: user.name })
+  <Tab title="Script Tag">
+    ```javascript
+    async function identifyToCrow() {
+      const res = await fetch('/api/crow-token', {
+        headers: { Authorization: `Bearer ${yourAuthToken}` }
       })
-  }, [isAuthenticated])
+      const { token } = await res.json()
+      
+      window.crow('identify', { token, name: userName })
+    }
 
-  return <YourApp />
-}
-```
+    // Call after login or on page load if already logged in
+    identifyToCrow()
 
-</CodeGroup>
-
----
-
-## 4. Refresh Before Expiry
-
-Crow forwards the token as-is—if it's expired, your API will 401. Refresh proactively:
-
-```javascript
-// Refresh every 50 minutes (token expires in 60)
-setInterval(identifyToCrow, 50 * 60 * 1000)
-```
+    // Refresh every 50 minutes (token expires in 60)
+    setInterval(identifyToCrow, 50 * 60 * 1000)
+    ```
+  </Tab>
+</Tabs>
 
 ---
 
-## 5. Handle Logout
+## 4. Handle Logout
 
-```javascript
-function handleLogout() {
-  logout()
-  window.crow('resetUser')
-}
-```
+<Tabs>
+  <Tab title="React SDK">
+    Logout is handled automatically — when the component unmounts or the user navigates away, the session is cleared.
+  </Tab>
 
-<Warning>Always call `resetUser` on logout to clear the previous user's session.</Warning>
+  <Tab title="Script Tag">
+    ```javascript
+    function handleLogout() {
+      logout()
+      window.crow('resetUser')
+    }
+    ```
+
+    <Warning>Always call `resetUser` on logout to clear the previous user's session.</Warning>
+  </Tab>
+</Tabs>
 
 ---
 
