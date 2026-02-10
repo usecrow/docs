@@ -318,11 +318,22 @@ React to server-side tool completions — refresh data, show a diff UI, dispatch
 
 ## Tool Renderers
 
-Render custom visuals inline in the chat when a tool completes (charts, previews, cards).
+Render custom visuals inline in the chat when a tool completes — data cards, tables, charts, and more.
+
+Your renderer receives `{ result, status }` and returns one of:
+
+| Return type | Use case |
+|-------------|----------|
+| **HTML string** | Data cards, tables, simple visuals |
+| **HTMLElement** | Charts via Chart.js, D3, ECharts, Plotly |
+| **ReactNode** | Full React components (React SDK only) |
 
 <Tabs>
   <Tab title="Script Tag">
-    Script-tag renderers return an **HTML string**. Use inline `style` attributes (Tailwind classes won't work inside the widget's Shadow DOM):
+
+    ### Data Card
+
+    Show key metrics with change indicators:
 
     ```javascript
     window.crow('registerToolRenderers', {
@@ -331,14 +342,84 @@ Render custom visuals inline in the chat when a tool completes (charts, previews
         const color = r.changePercent > 0 ? '#059669' : '#ef4444';
         const arrow = r.changePercent > 0 ? '↑' : '↓';
         return `<div style="padding:12px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; font-family:system-ui,sans-serif;">
-          <div style="font-size:13px; font-weight:600; color:#0f172a;">${r.title || 'Chart'}</div>
+          <div style="font-size:13px; font-weight:600; color:#0f172a;">${r.title || 'Metric'}</div>
           <div style="font-size:24px; font-weight:700; color:#2563eb; margin-top:4px;">${r.currentValue || 'N/A'}</div>
           ${r.changePercent != null
             ? `<div style="font-size:12px; color:${color};">${arrow} ${Math.abs(r.changePercent).toFixed(1)}%</div>`
             : ''}
+          ${r.dashboard_url
+            ? `<a href="${r.dashboard_url}" target="_blank" style="font-size:11px; color:#2563eb; text-decoration:none; margin-top:8px; display:inline-block;">View full chart ↗</a>`
+            : ''}
         </div>`;
       }
     });
+    ```
+
+    ### Table
+
+    Display structured data in rows and columns:
+
+    ```javascript
+    window.crow('registerToolRenderers', {
+      query_data_table: ({ result }) => {
+        const r = result || {};
+        const headers = r.columns || [];
+        const rows = r.rows || [];
+        return `<div style="border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; font-family:system-ui,sans-serif;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                ${headers.map(h =>
+                  '<th style="padding:8px 12px; text-align:left; font-weight:600; border-bottom:1px solid #e2e8f0;">' + h + '</th>'
+                ).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row =>
+                '<tr style="border-bottom:1px solid #f1f5f9;">' +
+                  row.map(cell =>
+                    '<td style="padding:6px 12px; color:#334155;">' + cell + '</td>'
+                  ).join('') +
+                '</tr>'
+              ).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }
+    });
+    ```
+
+    ### Chart (Chart.js, D3, ECharts)
+
+    For interactive charts, return an **HTMLElement** instead of a string. The widget mounts it directly:
+
+    ```html
+    <!-- Load Chart.js (or any charting library) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+    window.crow('registerToolRenderers', {
+      query_analytics_chart: ({ result }) => {
+        const canvas = document.createElement('canvas');
+        canvas.style.width = '100%';
+        canvas.style.maxHeight = '200px';
+        new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: result.data.map(d => d.date),
+            datasets: [{
+              label: result.title,
+              data: result.data.map(d => d.value),
+              borderColor: '#2563eb',
+              tension: 0.3,
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        return canvas;  // Return the DOM element
+      }
+    });
+    </script>
     ```
 
     <Warning>
@@ -358,7 +439,7 @@ Render custom visuals inline in the chat when a tool completes (charts, previews
     </Warning>
 
     <Tip>
-    The widget uses Shadow DOM for CSS isolation. Use inline `style` attributes in your HTML strings — Tailwind classes and external CSS won't apply inside the widget.
+    The widget uses Shadow DOM for CSS isolation. Use inline `style` attributes — Tailwind classes and external CSS won't apply inside the widget.
     </Tip>
   </Tab>
 
