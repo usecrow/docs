@@ -1,0 +1,213 @@
+---
+title: "Multi-Subdomain Endpoints"
+description: "Route API calls to different subdomains with separate credentials"
+---
+
+Use multi-subdomain endpoints when your backend serves multiple workspaces at different subdomains — each with its own base URL and auth token — but shares the same OpenAPI spec.
+
+**Example:** A customer has `workspace1.app.com`, `workspace2.app.com`, and `workspace3.app.com`. Each subdomain has its own bearer token, but the API shape is identical.
+
+---
+
+## How It Works
+
+```
+1. You configure subdomain → base URL + auth mappings
+2. When embedding the widget, pass a `subdomain` identifier
+3. Crow routes API calls to the matching base URL with the matching credentials
+```
+
+If no `subdomain` is passed, Crow falls back to the default base URL and auth config — fully backward compatible.
+
+---
+
+## Configure via Dashboard
+
+In **Integration** → **OpenAPI**, scroll to **Multi-Subdomain Endpoints**:
+
+1. Click **Configure** (or **Show** if configs already exist)
+2. Enter a subdomain key (e.g., `workspace1`)
+3. Enter the base URL (e.g., `https://workspace1.app.com/api`)
+4. Select the auth type and enter credentials
+5. Click **Save**
+6. Repeat for each subdomain
+
+---
+
+## Configure via API
+
+For bulk setup, use the API to send all subdomain configs at once.
+
+### Bulk Merge (Recommended)
+
+Adds new subdomains and updates existing ones without removing any.
+
+```bash
+curl -X PATCH https://api.usecrow.org/api/products/YOUR_PRODUCT_ID/endpoint-configs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "configs": {
+      "workspace1": {
+        "api_base_url": "https://workspace1.app.com/api",
+        "api_auth_config": {
+          "auth_type": "bearer",
+          "token": "token-for-ws1"
+        }
+      },
+      "workspace2": {
+        "api_base_url": "https://workspace2.app.com/api",
+        "api_auth_config": {
+          "auth_type": "bearer",
+          "token": "token-for-ws2"
+        }
+      }
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "added": 2,
+  "updated": 0,
+  "total": 2
+}
+```
+
+### Replace All
+
+Replaces the entire config set. Any subdomain not included will be removed.
+
+```bash
+curl -X PUT https://api.usecrow.org/api/products/YOUR_PRODUCT_ID/endpoint-configs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "configs": {
+      "workspace1": {
+        "api_base_url": "https://workspace1.app.com/api",
+        "api_auth_config": { "auth_type": "bearer", "token": "token-for-ws1" }
+      }
+    }
+  }'
+```
+
+### Upsert Single
+
+Add or update a single subdomain:
+
+```bash
+curl -X PUT https://api.usecrow.org/api/products/YOUR_PRODUCT_ID/endpoint-configs/workspace1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "api_base_url": "https://workspace1.app.com/api",
+    "api_auth_config": { "auth_type": "bearer", "token": "token-for-ws1" }
+  }'
+```
+
+### Delete Single
+
+```bash
+curl -X DELETE https://api.usecrow.org/api/products/YOUR_PRODUCT_ID/endpoint-configs/workspace1
+```
+
+### List All
+
+```bash
+curl https://api.usecrow.org/api/products/YOUR_PRODUCT_ID/endpoint-configs
+```
+
+<Note>
+Tokens are masked in list responses (only last 4 characters shown).
+</Note>
+
+---
+
+## Pass Subdomain to Widget
+
+Tell the widget which subdomain to use so Crow routes API calls to the correct endpoint.
+
+<Tabs>
+  <Tab title="Script Tag">
+    Add `data-subdomain` to the script tag:
+
+    ```html
+    <script
+      src="https://api.usecrow.org/static/crow-widget.js"
+      data-api-url="https://api.usecrow.org"
+      data-product-id="YOUR_PRODUCT_ID"
+      data-subdomain="workspace1"
+    ></script>
+    ```
+
+    | Attribute | Required | Description |
+    |-----------|----------|-------------|
+    | `data-subdomain` | No | Subdomain key matching a configured endpoint |
+
+  </Tab>
+
+  <Tab title="React SDK">
+    Pass the `subdomain` prop:
+
+    ```tsx
+    <CrowWidget
+      productId="YOUR_PRODUCT_ID"
+      apiUrl="https://api.usecrow.org"
+      subdomain="workspace1"
+    />
+    ```
+
+    ```tsx
+    <CrowCopilot
+      productId="YOUR_PRODUCT_ID"
+      apiUrl="https://api.usecrow.org"
+      subdomain="workspace1"
+      variant="floating"
+    />
+    ```
+
+    | Prop | Required | Description |
+    |------|----------|-------------|
+    | `subdomain` | No | Subdomain key matching a configured endpoint |
+
+  </Tab>
+</Tabs>
+
+<Tip>
+You can set `subdomain` dynamically based on the logged-in user's workspace, the current URL, or any other runtime value.
+</Tip>
+
+---
+
+## Resolution Logic
+
+| Scenario | Behavior |
+|----------|----------|
+| `subdomain` passed and found in config | Uses that subdomain's base URL + auth |
+| `subdomain` passed but **not** found | Returns an error (no guessing) |
+| No `subdomain` passed | Falls back to default base URL + auth |
+
+Existing products that don't use subdomains are unaffected — nothing changes unless you explicitly pass a `subdomain`.
+
+---
+
+## Supported Auth Types
+
+Each subdomain config supports the same auth types as the main connection:
+
+| Type | Config |
+|------|--------|
+| **Bearer Token** | `{ "auth_type": "bearer", "token": "..." }` |
+| **API Key** | `{ "auth_type": "api_key", "header_name": "X-API-Key", "token": "..." }` |
+| **None** | `{ "auth_type": "none" }` |
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Subdomain not found" error | Check the subdomain key matches exactly (case-sensitive) |
+| API calls hitting wrong URL | Verify `data-subdomain` / `subdomain` prop is set |
+| Configs not showing in dashboard | Refresh the page — configs auto-load on mount |
+| PATCH not adding configs | Ensure body uses `{ "configs": { ... } }` format |

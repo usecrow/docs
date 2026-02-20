@@ -31,7 +31,7 @@
           },
           {
             "group": "Integration",
-            "pages": ["integration-overview", "openapi", "openapi-authentication", "client-side-tools", "tool-renderers", "mcp-servers"]
+            "pages": ["integration-overview", "openapi", "openapi-authentication", "multi-subdomain-endpoints", "client-side-tools", "tool-renderers", "mcp-servers"]
           },
           {
             "group": "Monitor",
