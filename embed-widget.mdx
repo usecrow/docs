@@ -50,6 +50,7 @@ Choose your preferred installation method:
     | `data-agent-name` | No | Display name (defaults to "Assistant") |
     | `data-variant` | No | `widget` (default) or `copilot` |
     | `data-subdomain` | No | Subdomain key for [multi-subdomain endpoints](/multi-subdomain-endpoints) |
+    | `data-language` | No | ISO 639-1 language code (e.g., `es`, `fr`, `ja`). See [Multi-Language](/multi-language) |
 
     After the script loads, use `window.crow()` to pass functions and objects:
 
@@ -101,6 +102,7 @@ Choose your preferred installation method:
     | `toolRenderers` | No | Map of tool name → React component for inline rendering. See [Tool Renderers](/tool-renderers) |
     | `onToolResult` | No | Callback `(toolName, result) => void` fired when a server-side tool completes |
     | `subdomain` | No | Subdomain key for [multi-subdomain endpoints](/multi-subdomain-endpoints) |
+    | `language` | No | ISO 639-1 language code (e.g., `es`, `fr`, `ja`). See [Multi-Language](/multi-language) |
     | `navigate` | No | SPA navigation function (e.g. `router.push`) for internal links |
 
     <Accordion title="Copilot Sidebar">

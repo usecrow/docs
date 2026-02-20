@@ -19,7 +19,7 @@
           },
           {
             "group": "Setup",
-            "pages": ["embed-widget", "identity-verification", "callbacks", "deploy-overview"]
+            "pages": ["embed-widget", "multi-language", "identity-verification", "callbacks", "deploy-overview"]
           },
           {
             "group": "Agent",
