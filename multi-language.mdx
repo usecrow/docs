@@ -1,0 +1,152 @@
+---
+title: "Multi-Language Support"
+description: "Make the AI respond in your user's language"
+---
+
+Pass a `language` prop to the widget and Crow handles the rest — the AI responds in that language and the welcome message is translated automatically.
+
+**Example:** Your platform has users who speak Spanish, Japanese, and French. Set `language="es"` for Spanish users and the entire experience adapts — no prompt engineering needed.
+
+---
+
+## How It Works
+
+```
+1. You pass a language code (ISO 639-1) when embedding the widget
+2. Crow translates the welcome message on the fly
+3. A language instruction is injected into the AI's system prompt
+4. The AI responds in the specified language for the entire conversation
+```
+
+When no language is passed (or `language="en"`), behavior is unchanged — fully backward compatible.
+
+---
+
+## Pass Language to Widget
+
+<Tabs>
+  <Tab title="Script Tag">
+    Add `data-language` to the script tag:
+
+    ```html
+    <script
+      src="https://api.usecrow.org/static/crow-widget.js"
+      data-api-url="https://api.usecrow.org"
+      data-product-id="YOUR_PRODUCT_ID"
+      data-language="es"
+    ></script>
+    ```
+
+    | Attribute | Required | Description |
+    |-----------|----------|-------------|
+    | `data-language` | No | ISO 639-1 language code (e.g., `es`, `fr`, `ja`) |
+
+  </Tab>
+
+  <Tab title="React SDK">
+    Pass the `language` prop:
+
+    ```tsx
+    <CrowWidget
+      productId="YOUR_PRODUCT_ID"
+      apiUrl="https://api.usecrow.org"
+      language="es"
+    />
+    ```
+
+    ```tsx
+    <CrowCopilot
+      productId="YOUR_PRODUCT_ID"
+      apiUrl="https://api.usecrow.org"
+      language="es"
+      variant="floating"
+    />
+    ```
+
+    | Prop | Required | Description |
+    |------|----------|-------------|
+    | `language` | No | ISO 639-1 language code (e.g., `es`, `fr`, `ja`) |
+
+  </Tab>
+</Tabs>
+
+<Tip>
+You can set `language` dynamically based on the logged-in user's locale, browser settings, or any other runtime value. For example:
+
+```tsx
+const language = user.locale || navigator.language.split('-')[0];
+
+<CrowWidget language={language} ... />
+```
+</Tip>
+
+---
+
+## What Gets Translated
+
+| Element | Behavior |
+|---------|----------|
+| **Welcome message** | Translated automatically when the widget loads (uses a fast LLM call) |
+| **AI responses** | All replies are in the specified language for the entire conversation |
+| **Error messages from the AI** | Also in the specified language |
+| **Widget UI chrome** | Not translated (buttons, placeholders remain in English) |
+
+---
+
+## Supported Languages
+
+Crow supports the following ISO 639-1 codes:
+
+| Code | Language | Code | Language | Code | Language |
+|------|----------|------|----------|------|----------|
+| `af` | Afrikaans | `hr` | Croatian | `nl` | Dutch |
+| `am` | Amharic | `hu` | Hungarian | `no` | Norwegian |
+| `ar` | Arabic | `hy` | Armenian | `pa` | Punjabi |
+| `az` | Azerbaijani | `id` | Indonesian | `pl` | Polish |
+| `be` | Belarusian | `is` | Icelandic | `pt` | Portuguese |
+| `bg` | Bulgarian | `it` | Italian | `ro` | Romanian |
+| `bn` | Bengali | `ja` | Japanese | `ru` | Russian |
+| `bs` | Bosnian | `ka` | Georgian | `si` | Sinhala |
+| `ca` | Catalan | `kk` | Kazakh | `sk` | Slovak |
+| `cs` | Czech | `km` | Khmer | `sl` | Slovenian |
+| `cy` | Welsh | `kn` | Kannada | `sq` | Albanian |
+| `da` | Danish | `ko` | Korean | `sr` | Serbian |
+| `de` | German | `lo` | Lao | `sv` | Swedish |
+| `el` | Greek | `lt` | Lithuanian | `sw` | Swahili |
+| `en` | English | `lv` | Latvian | `ta` | Tamil |
+| `es` | Spanish | `mk` | Macedonian | `te` | Telugu |
+| `et` | Estonian | `ml` | Malayalam | `th` | Thai |
+| `fa` | Persian | `mn` | Mongolian | `tl` | Filipino |
+| `fi` | Finnish | `mr` | Marathi | `tr` | Turkish |
+| `fr` | French | `ms` | Malay | `uk` | Ukrainian |
+| `ga` | Irish | `my` | Burmese | `ur` | Urdu |
+| `gl` | Galician | `ne` | Nepali | `uz` | Uzbek |
+| `gu` | Gujarati | | | `vi` | Vietnamese |
+| `he` | Hebrew | | | `zh` | Chinese |
+| `hi` | Hindi | | | `zu` | Zulu |
+
+Passing an unsupported code returns a `422` validation error.
+
+---
+
+## Behavior Details
+
+| Scenario | Behavior |
+|----------|----------|
+| `language` not passed | English (default) — no changes to current behavior |
+| `language="en"` | English — no translation or prompt injection |
+| `language="es"` | Welcome message translated to Spanish, AI responds in Spanish |
+| Unsupported language code | `422` error returned by the API |
+| Welcome message is null | The SDK default ("Hi! How can I help you today?") is translated |
+| Translation fails | Falls back to the original English text silently |
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `422` error on chat | Check the language code is a valid ISO 639-1 code from the table above |
+| Welcome message still in English | Verify `data-language` / `language` prop is set and not `"en"` |
+| AI responds in wrong language | Check the language code is correct — `zh` for Chinese, `pt` for Portuguese, etc. |
+| Mixed languages in response | This can happen if the user writes in a different language. The AI prioritizes the configured language but may adapt to user input |
