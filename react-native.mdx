@@ -25,26 +25,35 @@ npx expo install @react-native-async-storage/async-storage
 
 ## Quick Start
 
-Wrap your app in `CrowProvider` and use the `useChat` hook:
+### Drop-in widget (fastest)
+
+Add `<CrowWidget />` inside your `<CrowProvider>` for a floating chat button and bottom sheet — zero UI work required:
 
 ```tsx
-import { CrowProvider, useChat, createAsyncStorageAdapter } from '@usecrow/react-native';
+import { CrowProvider, CrowWidget, createAsyncStorageAdapter } from '@usecrow/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Create storage adapter for persistence
 const storage = createAsyncStorageAdapter(AsyncStorage);
+await storage.preloadForProduct('YOUR_PRODUCT_ID');
 
 export default function App() {
   return (
-    <CrowProvider
-      productId="YOUR_PRODUCT_ID"
-      apiUrl="https://api.usecrow.org"
-      storage={storage}
-    >
-      <ChatScreen />
+    <CrowProvider productId="YOUR_PRODUCT_ID" storage={storage}>
+      <YourApp />
+      <CrowWidget />
     </CrowProvider>
   );
 }
+```
+
+`CrowWidget` renders a floating action button that opens a slide-up chat sheet. It handles messages, streaming, conversation history, and user auth out of the box.
+
+### Custom UI (headless)
+
+Use `useChat` to build your own interface:
+
+```tsx
+import { CrowProvider, useChat } from '@usecrow/react-native';
 
 function ChatScreen() {
   const { messages, sendMessage, isLoading } = useChat();
@@ -52,9 +61,7 @@ function ChatScreen() {
   return (
     <FlatList
       data={messages}
-      renderItem={({ item }) => (
-        <Text>{item.content}</Text>
-      )}
+      renderItem={({ item }) => <Text>{item.content}</Text>}
     />
   );
 }
