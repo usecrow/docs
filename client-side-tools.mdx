@@ -68,6 +68,29 @@ The returned object is sent back to the agent so it can incorporate the result i
 
 ---
 
+## Showing a Loading State
+
+For tools that take a few seconds, call `setToolStatus` to show a spinning indicator with a status message inside the widget. Clear it when done.
+
+```js
+window.crow('registerTools', {
+  createAndPopulateList: async ({ listName }) => {
+    window.crow('setToolStatus', 'Creating list...');
+    await createList(listName);
+
+    window.crow('setToolStatus', 'Adding leads...');
+    await addLeads();
+
+    window.crow('setToolStatus', ''); // clear
+    return { status: 'success' };
+  }
+});
+```
+
+The status appears above the input box with a spinner while non-empty, and disappears when set to `''`.
+
+---
+
 ## How It Works
 
 ```mermaid
