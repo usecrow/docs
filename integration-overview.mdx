@@ -5,45 +5,81 @@ description: "Connect your agent to APIs and services"
 
 Integrations let your agent take actions—not just answer questions.
 
-## Options
+## Server-Side Tools
+
+These are tools that run on a server. The agent calls them, they execute, and results come back.
 
 | Type | Best for | Setup |
 |------|----------|-------|
-| [OpenAPI](/openapi) | Your REST API | Upload spec file |
-| [MCP Servers](/mcp-servers) | Third-party services, complex integrations | Connect server URL |
+| [OpenAPI](/openapi) | Your REST API with a spec file | Upload OpenAPI/Swagger spec |
+| [Server-Side MCP](/server-side-mcp) | Your backend via MCP protocol | Run an MCP server, connect URL |
 
-## When to Use OpenAPI
+### When to Use OpenAPI
 
 - You have a REST API with an OpenAPI/Swagger spec
-- You want your agent to call your backend (check orders, create tickets, etc.)
-- You need to authenticate requests with API keys or user tokens
+- You want simple endpoint calls (check orders, create tickets)
+- You need API Key, Bearer Token, or JWT Forward auth
 
-## When to Use MCP
+### When to Use Server-Side MCP
 
-- Connecting third-party services
-- Using pre-built integrations (Notion, etc.)
-- Real-time bidirectional communication
+- You want richer tool definitions with complex logic
+- Your API doesn't have a clean OpenAPI spec
+- You want live tool discovery (add tools without re-uploading a spec)
+- You need to forward end-user identity to your server
+
+<Note>
+OpenAPI and Server-Side MCP are **mutually exclusive** per product. Pick one.
+</Note>
+
+## Client-Side Tools
+
+Tools that run in the user's browser. The agent calls them, the widget executes them locally.
+
+| Type | Best for |
+|------|----------|
+| [Client-Side Tools](/client-side-tools) | Browser actions (navigation, UI updates, local data) |
+| [Tool Renderers](/tool-renderers) | Custom UI for tool results (charts, tables) |
+
+## External MCP Servers
+
+Third-party MCP servers that you connect to (not your own backend).
+
+| Type | Best for |
+|------|----------|
+| [MCP Servers](/mcp-servers) | Third-party services (Notion, databases, etc.) |
+
+---
 
 ## Example Actions
 
-**OpenAPI:**
+**Server-Side (OpenAPI or MCP):**
 - Check order status
 - Create support tickets
 - Look up customer info
 - Process refunds
 
-**MCP:**
+**Client-Side:**
+- Navigate to a page
+- Open a modal
+- Copy text to clipboard
+
+**External MCP:**
 - Search Notion pages
-- Query databases
-- Access Google Drive
+- Query external databases
 
 ---
 
 <CardGroup cols={2}>
   <Card title="OpenAPI" icon="code" href="/openapi">
-    Connect your REST API
+    Connect your REST API via spec file
   </Card>
-  <Card title="MCP Servers" icon="server" href="/mcp-servers">
-    Connect MCP servers
+  <Card title="Server-Side MCP" icon="server" href="/server-side-mcp">
+    Connect your backend via MCP protocol
+  </Card>
+  <Card title="Client-Side Tools" icon="browser" href="/client-side-tools">
+    Browser-side tool handlers
+  </Card>
+  <Card title="External MCP Servers" icon="plug" href="/mcp-servers">
+    Third-party MCP integrations
   </Card>
 </CardGroup>
