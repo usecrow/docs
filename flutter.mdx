@@ -3,7 +3,7 @@ title: "Flutter"
 description: "Add Crow to your Flutter app"
 ---
 
-The `crow_flutter` package adds Crow to any Flutter app. Drop in `CrowChatView` for a ready-made chat UI, or use `CrowChatNotifier` directly to build a fully custom interface.
+The `crow_flutter` package adds Crow to any Flutter app. Use `CrowWidget` for a floating chat button that overlays your existing app, drop in `CrowChatView` for a full-screen chat experience, or use `CrowChatNotifier` directly to build a fully custom interface.
 
 ## Installation
 
@@ -15,7 +15,43 @@ flutter pub add crow_flutter
 
 ## Quick Start
 
-Wrap your app with `CrowScope` and drop in `CrowChatView`:
+### Floating widget (recommended)
+
+Add `CrowWidget` inside a `Stack` to get a floating chat button that slides up a chat sheet — zero extra UI work:
+
+```dart
+import 'package:crow_flutter/crow_flutter.dart';
+import 'package:flutter/material.dart';
+
+void main() => runApp(
+  const CrowScope(
+    productId: 'YOUR_PRODUCT_ID',
+    child: MyApp(),
+  ),
+);
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          YourExistingApp(),   // your app content
+          const CrowWidget(),  // floating chat button, bottom-right
+        ],
+      ),
+    );
+  }
+}
+```
+
+`CrowWidget` renders a floating black circle button in the bottom-right corner. Tapping it slides up a chat sheet at 85% screen height with the full `CrowChatView` inside.
+
+### Full-screen chat
+
+Wrap your app with `CrowScope` and drop in `CrowChatView` as the full body:
 
 ```dart
 import 'package:crow_flutter/crow_flutter.dart';
@@ -55,6 +91,14 @@ class MyApp extends StatelessWidget {
 | `model` | No | Override the default model |
 | `identityToken` | No | JWT token for authenticated users |
 | `storage` | No | Custom storage adapter. Defaults to `SharedPreferences` |
+
+---
+
+## CrowWidget Props
+
+| Prop | Required | Description |
+|------|----------|-------------|
+| `theme` | No | `CrowTheme` instance to customize the chat sheet appearance |
 
 ---
 
