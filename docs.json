@@ -19,7 +19,7 @@
           },
           {
             "group": "Setup",
-            "pages": ["embed-widget", "react-native", "multi-language", "identity-verification", "callbacks", "deploy-overview"]
+            "pages": ["embed-widget", "react-native", "flutter", "multi-language", "identity-verification", "callbacks", "deploy-overview"]
           },
           {
             "group": "Agent",

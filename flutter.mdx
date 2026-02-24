@@ -1,0 +1,272 @@
+---
+title: "Flutter"
+description: "Add Crow to your Flutter app"
+---
+
+The `crow_flutter` package adds Crow to any Flutter app. Drop in `CrowChatView` for a ready-made chat UI, or use `CrowChatNotifier` directly to build a fully custom interface.
+
+## Installation
+
+```bash
+flutter pub add crow_flutter
+```
+
+---
+
+## Quick Start
+
+Wrap your app with `CrowScope` and drop in `CrowChatView`:
+
+```dart
+import 'package:crow_flutter/crow_flutter.dart';
+import 'package:flutter/material.dart';
+
+void main() => runApp(
+  const CrowScope(
+    productId: 'YOUR_PRODUCT_ID',
+    child: MyApp(),
+  ),
+);
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(body: CrowChatView()),
+    );
+  }
+}
+```
+
+`CrowChatView` includes message bubbles, streaming, conversation history, suggested actions, and a "Powered by Crow" footer — no additional setup required.
+
+---
+
+## CrowScope Props
+
+`CrowScope` is an `InheritedWidget` that provides the client and state down the widget tree.
+
+| Prop | Required | Description |
+|------|----------|-------------|
+| `productId` | Yes | Your product ID from the dashboard |
+| `apiUrl` | No | API URL (defaults to `https://api.usecrow.org`) |
+| `model` | No | Override the default model |
+| `identityToken` | No | JWT token for authenticated users |
+| `storage` | No | Custom storage adapter. Defaults to `SharedPreferences` |
+
+---
+
+## CrowChatView Props
+
+| Prop | Required | Description |
+|------|----------|-------------|
+| `theme` | No | `CrowTheme` instance to customize appearance |
+
+---
+
+## Theming
+
+Customize colors and styles via `CrowTheme`:
+
+```dart
+CrowChatView(
+  theme: CrowTheme(
+    backgroundColor: Colors.white,
+    userBubbleColor: Colors.white,
+    userBubbleTextColor: const Color(0xFF111827),
+    assistantBubbleColor: Colors.black,
+    assistantBubbleTextColor: Colors.white,
+    inputBorderColor: const Color(0xFFE5E7EB),
+    sendButtonColor: Colors.black,
+    bubbleBorderRadius: 18.0,
+    poweredByColor: const Color(0xFF9CA3AF),
+  ),
+)
+```
+
+### Theme Properties
+
+| Property | Description |
+|----------|-------------|
+| `backgroundColor` | Chat background color |
+| `userBubbleColor` | User message bubble background |
+| `userBubbleTextColor` | User message text color |
+| `assistantBubbleColor` | Assistant bubble background |
+| `assistantBubbleTextColor` | Assistant message text color |
+| `sendButtonColor` | Send button color |
+| `bubbleBorderRadius` | Corner radius for message bubbles |
+| `inputBorderColor` | Input bar border color |
+| `inputBorderLoadingColor` | Input border color while streaming |
+| `poweredByColor` | "Powered by Crow" text color |
+| `headerBorderColor` | Bottom border of the header |
+| `messageTextStyle` | Full `TextStyle` override for message text |
+| `inputDecoration` | Full `InputDecoration` override for the text field |
+
+---
+
+## Custom UI (Headless)
+
+Access `CrowChatNotifier` directly via `CrowScope.chatOf(context)` to build your own UI:
+
+```dart
+class MyChatScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final notifier = CrowScope.chatOf(context);
+
+    return ListenableBuilder(
+      listenable: notifier,
+      builder: (context, _) {
+        final state = notifier.state;
+
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: state.messages.length,
+                itemBuilder: (context, i) => Text(state.messages[i].content),
+              ),
+            ),
+            if (state.isLoading) const CircularProgressIndicator(),
+          ],
+        );
+      },
+    );
+  }
+}
+```
+
+### CrowChatState
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `messages` | `List<Message>` | All messages in the current conversation |
+| `isLoading` | `bool` | Agent is currently streaming a response |
+| `suggestedActions` | `List<SuggestedAction>` | Quick reply suggestions from the agent |
+| `isIdentified` | `bool` | A token has been set for this user |
+| `isVerified` | `bool` | Server confirmed the user's identity |
+
+### CrowChatNotifier Methods
+
+| Method | Description |
+|--------|-------------|
+| `sendMessage(String)` | Send a message and stream the response |
+| `stop()` | Cancel the current streaming response |
+| `clear()` | Clear messages and start a new conversation |
+| `identify(IdentifyOptions)` | Set a user identity token |
+| `resetUser()` | Log out the current user |
+
+### Message Type
+
+```dart
+class Message {
+  final String id;
+  final MessageRole role;   // MessageRole.user or MessageRole.assistant
+  final String content;
+  final DateTime timestamp;
+  final bool isStreaming;
+  final List<Citation> citations;
+}
+```
+
+---
+
+## User Identity
+
+Identify users to enable conversation history and personalized responses:
+
+```dart
+final notifier = CrowScope.chatOf(context);
+
+// From a login handler
+final token = await fetchTokenFromYourBackend();
+notifier.identify(IdentifyOptions(token: token));
+
+// Or pass via CrowScope props (auto-updates when token changes)
+CrowScope(
+  productId: 'YOUR_PRODUCT_ID',
+  identityToken: userToken,
+  child: MyApp(),
+)
+
+// Logout
+notifier.resetUser();
+```
+
+See [Identity Verification](/identity-verification) for generating tokens on your backend.
+
+---
+
+## Client-Side Tools
+
+Register tools that run natively in your Flutter app:
+
+```dart
+final client = CrowScope.clientOf(context);
+
+client.registerTool('navigateToScreen', (params) async {
+  final screen = params['screen'] as String;
+  Navigator.pushNamed(context, '/$screen');
+  return ToolResult.success({'navigated_to': screen});
+});
+
+client.registerTool('addToCart', (params) async {
+  final productId = params['product_id'] as String;
+  await cartController.add(productId);
+  return ToolResult.success({'added': productId});
+});
+```
+
+Upload tool definitions on the [Actions](https://app.usecrow.ai/actions) page so the agent knows when to call them.
+
+---
+
+## Platform Support
+
+| Platform | Support |
+|----------|---------|
+| iOS | ✅ |
+| Android | ✅ |
+| macOS | ✅ |
+| Web | ✅ |
+
+### iOS / macOS
+
+No additional configuration needed. For macOS apps, add the outbound networking entitlement if connecting to a local dev server:
+
+```xml
+<!-- macos/Runner/DebugProfile.entitlements -->
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+---
+
+## Differences from Other SDKs
+
+| | Web (`@usecrow/ui`) | React Native | Flutter |
+|-|---------------------|--------------|---------|
+| **Language** | TypeScript | TypeScript | Dart |
+| **Drop-in UI** | `<CrowWidget />` | `<CrowWidget />` | `CrowChatView` |
+| **State** | `useChat()` hook | `useChat()` hook | `CrowChatNotifier` |
+| **Storage** | localStorage | AsyncStorage adapter | SharedPreferences (built-in) |
+| **Provider** | `<CrowProvider>` | `<CrowProvider>` | `CrowScope` |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Identity Verification" icon="shield-halved" href="/identity-verification">
+    Generate JWT tokens on your backend
+  </Card>
+  <Card title="Client-Side Tools" icon="screwdriver-wrench" href="/client-side-tools">
+    Register tools the agent can call
+  </Card>
+  <Card title="React Native" icon="mobile" href="/react-native">
+    React Native SDK guide
+  </Card>
+  <Card title="Embed Widget" icon="code" href="/embed-widget">
+    Web widget installation guide
+  </Card>
+</CardGroup>
