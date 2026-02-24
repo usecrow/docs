@@ -30,24 +30,23 @@ void main() => runApp(
   ),
 );
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          YourExistingApp(),   // your app content
-          const CrowWidget(),  // floating chat button, bottom-right
-        ],
+    return MaterialApp(
+      // builder wraps every route — CrowWidget appears on all pages
+      builder: (context, child) => Stack(
+        children: [child!, const CrowWidget()],
       ),
+      home: const HomeScreen(),
     );
   }
 }
 ```
 
-`CrowWidget` renders a floating black circle button in the bottom-right corner. Tapping it slides up a chat sheet at 85% screen height with the full `CrowChatView` inside.
+Placing `CrowWidget` in `MaterialApp.builder` means it automatically appears on every page and route in your app — no need to add it to each screen individually. Tapping the button slides up a chat sheet at 85% screen height.
 
 ### Full-screen chat
 
@@ -278,7 +277,7 @@ Upload tool definitions on the [Actions](https://app.usecrow.ai/actions) page so
 
 ### iOS / macOS
 
-No additional configuration needed. For macOS apps, add the outbound networking entitlement if connecting to a local dev server:
+No additional configuration needed. For macOS apps, add the outbound networking entitlement — required for all network calls, including production:
 
 ```xml
 <!-- macos/Runner/DebugProfile.entitlements -->
@@ -293,7 +292,7 @@ No additional configuration needed. For macOS apps, add the outbound networking 
 | | Web (`@usecrow/ui`) | React Native | Flutter |
 |-|---------------------|--------------|---------|
 | **Language** | TypeScript | TypeScript | Dart |
-| **Drop-in UI** | `<CrowWidget />` | `<CrowWidget />` | `CrowChatView` |
+| **Drop-in UI** | `<CrowWidget />` | `<CrowWidget />` | `CrowWidget` |
 | **State** | `useChat()` hook | `useChat()` hook | `CrowChatNotifier` |
 | **Storage** | localStorage | AsyncStorage adapter | SharedPreferences (built-in) |
 | **Provider** | `<CrowProvider>` | `<CrowProvider>` | `CrowScope` |
