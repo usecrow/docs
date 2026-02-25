@@ -3,7 +3,7 @@ title: "Server-Side MCP Authentication"
 description: "Service keys, identity headers, and how the full auth chain works"
 ---
 
-This page explains exactly how authentication works when Crow calls your MCP server, and how your MCP server calls back to Crow's API. Every header, every token, every hop.
+This page explains exactly how authentication works when Crow calls your MCP server, and how your MCP server authenticates with your own backend. Every header, every token, every hop.
 
 ---
 
@@ -13,8 +13,8 @@ There are **three hops** in the full chain. Here's what happens at each one:
 
 ```
 ┌─────────┐         ┌──────────────┐         ┌────────────┐         ┌──────────────┐
-│  Widget  │───(1)──→│ Crow Backend │───(2)──→│ MCP Server │───(3)──→│ Crow Backend │
-│ (browser)│         │              │         │  (yours)   │         │  (API routes)│
+│  Widget  │───(1)──→│ Crow Backend │───(2)──→│ MCP Server │───(3)──→│ Your Backend │
+│ (browser)│         │              │         │  (yours)   │         │    API       │
 └─────────┘         └──────────────┘         └────────────┘         └──────────────┘
 ```
 
@@ -41,105 +41,154 @@ When Crow connects to your MCP server to execute tools, it sends **three types o
 | **Static headers** | Whatever you configured in the dashboard | `Authorization: Bearer sk-...` |
 | **Identity headers** | Resolved from header mappings (see below) | `X-User-ID: user_456` |
 
-**This is where your MCP server authenticates the request.** Check the `X-Service-Key` header to verify the request is coming from Crow, not a random caller.
+Your MCP server **automatically receives** the service key — Crow reads it from your product config and injects it into every request. You don't need to configure anything for this to happen.
 
-### Hop 3: Your MCP Server → Crow Backend
+### Hop 3: Your MCP Server → Your Backend API
 
-When your MCP server needs to call Crow's API (e.g., to update a product setting, fetch data), it sends the **service key** back:
+Your MCP server wraps your existing backend API. When a tool executes, it calls your API endpoints to actually do the work (query your database, create records, etc.).
+
+Your backend API already has auth — Clerk, Auth0, Firebase, API keys, whatever you use. The MCP server can't use those because it's not a user. It's a **service** acting on behalf of users.
+
+The solution: your backend adds a second auth path that accepts the **service key**. When the service key is present and valid, your backend trusts the request and reads scoping context (user ID, tenant ID) from headers instead of from a user JWT.
 
 | What | Value |
 |------|-------|
 | **Header** | `X-Service-Key` |
-| **Value** | Same service key from hop 2 (or from your server's env var) |
-| **Validated by** | Crow backend's `verify_service_or_clerk` middleware |
-| **Purpose** | Proves your MCP server is authorized to access this product's API |
+| **Value** | The same service key from hop 2, forwarded by your MCP server |
+| **Validated by** | Your backend's auth middleware |
+| **Purpose** | Proves the request is from a trusted service (your MCP server, called by Crow) |
+
+<Note>
+Your existing user auth (Clerk, Auth0, Firebase, etc.) stays **completely unchanged**. The service key adds a second auth path alongside it — it doesn't replace anything.
+</Note>
 
 ---
 
 ## Service Keys
 
-A service key is a shared secret between your Crow product and your MCP server. Crow sends it to your MCP server on every request. Your MCP server sends it back when calling Crow's API.
+A service key is a shared secret that lets your MCP server authenticate with your backend API. Think of it like a Stripe secret key — Crow generates it, you copy it to your backend.
+
+### How It Works
+
+```
+Crow dashboard (Deploy → API Keys)
+    │
+    ▼
+Crow generates and stores the service key
+    │
+    ├──→ Crow auto-injects it as X-Service-Key header
+    │    when calling your MCP server (Hop 2)
+    │
+    └──→ You copy it from the dashboard and add it to
+         your backend's .env file (for Hop 3 validation)
+```
+
+**The key lives in two places:**
+
+| Where | Env Var | Purpose |
+|-------|---------|---------|
+| Your MCP server | Received automatically via `X-Service-Key` header from Crow | Forwarded to your backend API |
+| Your backend API | `MCP_SERVICE_KEY` in `.env` | Validates incoming requests from the MCP server |
+
+Crow is the source of truth. You never generate the key yourself.
 
 ### Where to Find Your Service Key
 
-1. Go to your product's **Settings** page in the dashboard
-2. Copy the **Service Key** value
+1. Go to **Deploy** → **API Keys** in the Crow dashboard
+2. Copy the **Service Key**
+3. Add it to your backend's `.env`:
+   ```
+   MCP_SERVICE_KEY=HCF8nVjR8YON5eBzlMHuTqO8IwD3c0DSynVnTKq5/80=
+   ```
 
-### How It Flows
+### Adding Service Key Auth to Your Backend
 
-```
-Product settings (dashboard)
-    │
-    ▼
-Stored in products table → service_key column
-    │
-    ▼
-Crow backend reads it when building MCP connection
-    │
-    ▼
-Sent as X-Service-Key header to your MCP server (Hop 2)
-    │
-    ▼
-Your MCP server receives it, uses it to call Crow API (Hop 3)
-    │
-    ▼
-Crow backend validates it against MCP_SERVICE_KEY env var
-```
-
-### Validating the Service Key on Your MCP Server
-
-If your MCP server is **not** calling back to Crow's API (it just does its own thing), you should still validate the service key to make sure the request is coming from Crow:
+Add a ~15-line middleware alongside your existing auth. This does **not** replace your current auth — it adds a second path.
 
 <CodeGroup>
 
-```python Python (FastMCP)
-import hmac
-import os
-from fastmcp import FastMCP
-from fastmcp.dependencies import Depends, CurrentHeaders
+```python Python (FastAPI)
+import os, hmac
+from fastapi import Request, HTTPException
 
-mcp = FastMCP("My Backend")
-EXPECTED_KEY = os.environ["SERVICE_KEY"]
+SERVICE_KEY = os.environ.get("MCP_SERVICE_KEY", "")
 
-async def verify_crow_request(headers: dict = CurrentHeaders()):
-    """Reject requests that aren't from Crow."""
-    key = headers.get("x-service-key", "")
-    if not hmac.compare_digest(key, EXPECTED_KEY):
-        raise ValueError("Invalid service key")
+async def verify_auth(request: Request):
+    """Dual-path auth: service key (MCP server) OR user JWT (browsers).
 
-@mcp.tool()
-async def get_order(
-    order_id: str,
-    _auth = Depends(verify_crow_request),
-) -> dict:
-    # Only runs if service key is valid
-    return await db.orders.find(order_id)
+    Path 1: Service key present → trusted service, read user from headers
+    Path 2: No service key → normal user auth (Clerk, Auth0, etc.)
+    """
+    # Path 1: Service key (from MCP server via Crow)
+    service_key = request.headers.get("x-service-key")
+    if service_key and SERVICE_KEY:
+        if hmac.compare_digest(service_key, SERVICE_KEY):
+            # Trusted — read user context from headers
+            request.state.user_id = request.headers.get("x-user-id")
+            request.state.tenant_id = request.headers.get("x-tenant-id")
+            request.state.auth_type = "service_key"
+            return
+
+    # Path 2: Normal user auth (your existing flow, unchanged)
+    authorization = request.headers.get("authorization", "")
+    if authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ")
+        claims = await verify_user_jwt(token)  # your existing function
+        request.state.user_id = claims.get("user_id")
+        request.state.tenant_id = claims.get("tenant_id")
+        request.state.auth_type = "user_jwt"
+        return
+
+    raise HTTPException(status_code=401, detail="Unauthorized")
 ```
 
-```javascript Node.js
-function verifyCrowRequest(headers) {
-  const key = headers["x-service-key"] || "";
-  const expected = process.env.SERVICE_KEY;
+```javascript Node.js (Express)
+const crypto = require('crypto')
 
-  if (!expected || !timingSafeEqual(Buffer.from(key), Buffer.from(expected))) {
-    throw new Error("Invalid service key");
+const SERVICE_KEY = process.env.MCP_SERVICE_KEY || ""
+
+function authMiddleware(req, res, next) {
+  // Path 1: Service key (from MCP server via Crow)
+  const serviceKey = req.headers["x-service-key"]
+  if (serviceKey && SERVICE_KEY) {
+    if (crypto.timingSafeEqual(Buffer.from(serviceKey), Buffer.from(SERVICE_KEY))) {
+      // Trusted — read user context from headers
+      req.userId = req.headers["x-user-id"]
+      req.tenantId = req.headers["x-tenant-id"]
+      req.authType = "service_key"
+      return next()
+    }
   }
+
+  // Path 2: Normal user auth (your existing flow, unchanged)
+  const token = req.headers.authorization?.split(" ")[1]
+  if (token) {
+    try {
+      const claims = verifyUserJwt(token) // your existing function
+      req.userId = claims.user_id
+      req.tenantId = claims.tenant_id
+      req.authType = "user_jwt"
+      return next()
+    } catch {}
+  }
+
+  res.status(401).json({ error: "Unauthorized" })
 }
 ```
 
 </CodeGroup>
 
+**Key detail:** When the service key is present, your backend trusts the scoping headers (`X-User-ID`, `X-Tenant-ID`, etc.) because the caller has proven it's a trusted service. Without the service key, those headers are ignored and normal user auth applies.
+
 <Warning>
-Always use **constant-time comparison** (`hmac.compare_digest` in Python, `timingSafeEqual` in Node) to prevent timing attacks. Never use `==` to compare secrets.
+Always use **constant-time comparison** (`hmac.compare_digest` in Python, `crypto.timingSafeEqual` in Node) to prevent timing attacks. Never use `==` to compare secrets.
 </Warning>
 
-### If Your MCP Server Calls Back to Crow's API
+### Your MCP Server — Forwarding the Key
 
-This is the pattern used by Crow's own dogfood MCP server. Your MCP server receives the service key from Crow, then includes it when making API calls back:
+Your MCP server receives `X-Service-Key` from Crow automatically. It just needs to include it when calling your backend:
 
-<CodeGroup>
-
-```python Python (FastMCP + httpx)
+```python
 import os
 import httpx
 from fastmcp import FastMCP
@@ -147,24 +196,19 @@ from fastmcp.dependencies import Depends, CurrentHeaders
 
 mcp = FastMCP("My Backend")
 
-CROW_API_BASE = os.environ.get("API_BASE_URL", "https://api.usecrow.ai")
-SERVICE_KEY = os.environ.get("SERVICE_KEY", "")
-
-async def get_product_id(headers: dict = CurrentHeaders()) -> str:
-    """Read product ID from header set by Crow."""
-    value = headers.get("x-product-id", "")
-    if not value:
-        raise ValueError("Missing X-Product-ID header")
-    return value
+# Your backend API (not Crow's)
+API_BASE = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
 async def get_api_client(headers: dict = CurrentHeaders()) -> httpx.AsyncClient:
-    """Create an authenticated HTTP client for Crow's API."""
-    key = SERVICE_KEY or headers.get("x-service-key", "")
+    """HTTP client that forwards the service key to your backend."""
+    key = headers.get("x-service-key", "")
     return httpx.AsyncClient(
-        base_url=CROW_API_BASE,
+        base_url=API_BASE,
         headers={
             "Content-Type": "application/json",
-            "X-Service-Key": key,
+            "X-Service-Key": key,          # Forward to your backend
+            "X-User-ID": headers.get("x-user-id", ""),    # Forward user context
+            "X-Tenant-ID": headers.get("x-tenant-id", ""),
         },
         timeout=30.0,
     )
@@ -172,44 +216,32 @@ async def get_api_client(headers: dict = CurrentHeaders()) -> httpx.AsyncClient:
 @mcp.tool()
 async def get_order(
     order_id: str,
-    product_id: str = Depends(get_product_id),
     client: httpx.AsyncClient = Depends(get_api_client),
 ) -> dict:
-    """Look up an order. Calls back to Crow's API."""
-    resp = await client.get(f"/api/products/{product_id}/orders/{order_id}")
+    """Look up an order."""
+    resp = await client.get(f"/api/orders/{order_id}")
     resp.raise_for_status()
     return resp.json()
 ```
 
-```javascript Node.js
-const CROW_API_BASE = process.env.API_BASE_URL || "https://api.usecrow.ai";
-const SERVICE_KEY = process.env.SERVICE_KEY || "";
-
-async function callCrowApi(path, headers) {
-  const key = SERVICE_KEY || headers["x-service-key"] || "";
-  const resp = await fetch(`${CROW_API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      "X-Service-Key": key,
-    },
-  });
-  if (!resp.ok) throw new Error(`Crow API error: ${resp.status}`);
-  return resp.json();
-}
+<Tip>
+For local development, you can also set `SERVICE_KEY` as an env var on the MCP server as a fallback:
+```python
+key = os.environ.get("SERVICE_KEY", "") or headers.get("x-service-key", "")
 ```
-
-</CodeGroup>
+In production, the header from Crow is the primary source.
+</Tip>
 
 ---
 
 ## Identity Headers
 
-Identity headers let your MCP server know **who** the end user is. Crow extracts claims from the user's identity token and sends them as HTTP headers to your MCP server.
+Identity headers let your MCP server (and your backend) know **who** the end user is. Crow extracts claims from the user's identity token and sends them as HTTP headers.
 
 ### How Identity Flows Through the Chain
 
 ```
-1. Your backend mints an identity JWT:
+1. Your backend mints an identity JWT for the widget:
    { "user_id": "user_456", "email": "alice@example.com", "tenant_id": "t_789" }
 
 2. Widget sends it to Crow with every chat message
@@ -225,6 +257,8 @@ Identity headers let your MCP server know **who** the end user is. Crow extracts
    X-User-ID: user_456
    X-Email: alice@example.com
    X-Tenant-ID: t_789
+
+6. Your MCP server forwards them to your backend API
 ```
 
 ### Configuring Header Mappings
@@ -299,7 +333,7 @@ server.tool("get_my_orders", {}, async (args, { headers }) => {
 
 ## Putting It All Together
 
-Here's a complete example: an MCP server that authenticates via service key, reads the user's identity, and serves user-specific data.
+Here's the complete picture: Crow calls your MCP server, which calls your backend API, which serves user-specific data.
 
 **Dashboard configuration:**
 
@@ -311,49 +345,60 @@ Server-Side MCP:
 
 Header Mappings:
   X-User-ID    ← identity.user_id
-  X-Product-ID ← product.id
+  X-Tenant-ID  ← identity.tenant_id
 ```
 
-**MCP server:**
+**Your backend `.env`:**
+
+```
+MCP_SERVICE_KEY=HCF8nVjR8YON5eBzlMHuTqO8IwD3c0DSynVnTKq5/80=
+```
+
+**Your MCP server:**
 
 ```python
-import os, hmac
+import os
 import httpx
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends, CurrentHeaders
 
 mcp = FastMCP("My Backend")
-SERVICE_KEY = os.environ["SERVICE_KEY"]
+API_BASE = os.environ.get("API_BASE_URL", "https://api.yourapp.com")
 
-async def verify_service_key(headers: dict = CurrentHeaders()):
-    key = headers.get("x-service-key", "")
-    if not hmac.compare_digest(key, SERVICE_KEY):
-        raise ValueError("Unauthorized")
-
-async def get_user_id(headers: dict = CurrentHeaders()) -> str:
-    return headers.get("x-user-id", "")
+async def get_api_client(headers: dict = CurrentHeaders()) -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        base_url=API_BASE,
+        headers={
+            "Content-Type": "application/json",
+            "X-Service-Key": headers.get("x-service-key", ""),
+            "X-User-ID": headers.get("x-user-id", ""),
+            "X-Tenant-ID": headers.get("x-tenant-id", ""),
+        },
+        timeout=30.0,
+    )
 
 @mcp.tool()
 async def get_my_orders(
-    _auth = Depends(verify_service_key),
-    user_id: str = Depends(get_user_id),
+    client: httpx.AsyncClient = Depends(get_api_client),
 ) -> dict:
     """Get the current user's recent orders."""
-    if not user_id:
-        return {"error": "No authenticated user. Ask the user to log in."}
-    orders = await db.orders.find_by_user(user_id, limit=10)
-    return {"orders": orders}
+    resp = await client.get("/api/orders/mine")
+    resp.raise_for_status()
+    return resp.json()
 ```
+
+**Your backend middleware** (see [Adding Service Key Auth](#adding-service-key-auth-to-your-backend) above).
 
 **What happens when a user asks "show me my orders":**
 
 ```
-1. Widget → Crow:     identity_token (JWT with user_id: "user_456")
+1. Widget → Crow:       identity_token (JWT with user_id: "user_456")
 2. Crow validates JWT, extracts user_id
-3. Crow → MCP server: X-Service-Key: HCF8n..., X-User-ID: user_456
-4. MCP server validates service key ✓
-5. MCP server reads X-User-ID, queries database for user_456's orders
-6. Returns orders → Crow → Widget → User sees their order list
+3. Crow → MCP server:   X-Service-Key: HCF8n..., X-User-ID: user_456
+4. MCP server → Your backend: X-Service-Key: HCF8n..., X-User-ID: user_456
+5. Your backend validates service key ✓, reads X-User-ID
+6. Your backend queries orders for user_456
+7. Returns orders → MCP server → Crow → Widget → User sees their order list
 ```
 
 ---
@@ -362,9 +407,9 @@ async def get_my_orders(
 
 | Scenario | What Happens |
 |----------|-------------|
-| **Anonymous user** (no identity token) | Identity headers are not sent. Your MCP server receives the service key but no user context. Tools still work, but can't do user-specific actions. |
-| **Missing service key** on product | `X-Service-Key` header is not sent. Your MCP server can still be called, but can't authenticate the request or call back to Crow's API. |
-| **Identity claim doesn't exist** | If a header mapping references a claim that isn't in the JWT (e.g., `identity.tenant_id` but tenant_id wasn't included), that header is simply not sent. No error. |
+| **Anonymous user** (no identity token) | Identity headers are not sent. Your MCP server receives the service key but no user context. Tools still work for non-user-specific actions. |
+| **Service key not set** on product | `X-Service-Key` header is not sent. Your MCP server won't be able to authenticate with your backend. |
+| **Identity claim doesn't exist** | If a header mapping references a claim not in the JWT (e.g., `identity.tenant_id` but you didn't include tenant_id when minting), that header is simply not sent. No error. |
 | **MCP server is down** | Crow surfaces an error to the user: "Could not connect to the MCP server." The agent continues without those tools. |
 
 ---
@@ -372,9 +417,9 @@ async def get_my_orders(
 ## Security Checklist
 
 <Warning>
-- **Never expose your service key client-side.** It's a server-to-server secret.
-- **Always validate the service key** on your MCP server if it handles sensitive data.
-- **Use constant-time comparison** for secret validation.
+- **Never expose your service key client-side.** It's a server-to-server secret between your MCP server and your backend.
+- **Always validate the service key** in your backend middleware.
+- **Use constant-time comparison** for secret validation — never `==`.
 - **Set up Identity Verification** if your tools need to know who the user is.
 - **Use HTTPS** in production for your MCP server URL.
 </Warning>
@@ -383,8 +428,8 @@ async def get_my_orders(
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| MCP server gets 401 calling Crow API | Service key mismatch | Ensure `SERVICE_KEY` env var on MCP server matches the product's service key in dashboard |
-| Identity headers are empty | User not authenticated | Set up [Identity Verification](/identity-verification), ensure frontend calls `identify()` |
-| `X-Service-Key` header missing | No service key set on product | Go to product **Settings**, set a service key |
+| Your backend returns 401 | Service key mismatch or not set | Copy the service key from Crow dashboard → Deploy → API Keys and add to your backend's `.env` |
+| Identity headers are empty | User not authenticated in the widget | Set up [Identity Verification](/identity-verification), ensure frontend calls `identify()` |
+| `X-Service-Key` header missing | No service key on the product | Check **Deploy** → **API Keys** in dashboard |
 | MCP server not receiving headers | Wrong transport | Use **Streamable HTTP** (not SSE) for header support |
 | Custom claims not forwarded | Claim not in JWT | Ensure your backend includes the claim when minting the identity token |
