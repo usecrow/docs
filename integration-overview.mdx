@@ -11,24 +11,30 @@ These are tools that run on a server. The agent calls them, they execute, and re
 
 | Type | Best for | Setup |
 |------|----------|-------|
+| [Envoy CLI](/envoy) | Any backend — auto-generates an MCP server | `npx @usecrow/envoy` |
 | [OpenAPI](/openapi) | Your REST API with a spec file | Upload OpenAPI/Swagger spec |
 | [Server-Side MCP](/server-side-mcp) | Your backend via MCP protocol | Run an MCP server, connect URL |
 
+### When to Use Envoy (Recommended)
+
+- You want to get tools working in minutes, not hours
+- You have a standard REST backend and don't want to write MCP code
+- You want Crow to host and manage the MCP server for you
+
 ### When to Use OpenAPI
 
-- You have a REST API with an OpenAPI/Swagger spec
+- You already have an OpenAPI/Swagger spec
 - You want simple endpoint calls (check orders, create tickets)
 - You need API Key, Bearer Token, or JWT Forward auth
 
 ### When to Use Server-Side MCP
 
-- You want richer tool definitions with complex logic
-- Your API doesn't have a clean OpenAPI spec
-- You want live tool discovery (add tools without re-uploading a spec)
-- You need to forward end-user identity to your server
+- You want full control over tool definitions and hosting
+- Your tools need complex server-side logic beyond API wrapping
+- You need custom auth flows or identity forwarding
 
 <Note>
-OpenAPI and Server-Side MCP are **mutually exclusive** per product. Pick one.
+OpenAPI and Server-Side MCP are **mutually exclusive** per product. Envoy generates and hosts an MCP server for you, so it works alongside either approach.
 </Note>
 
 ## Client-Side Tools
@@ -70,6 +76,9 @@ Third-party MCP servers that you connect to (not your own backend).
 ---
 
 <CardGroup cols={2}>
+  <Card title="Envoy CLI" icon="wand-magic-sparkles" href="/envoy">
+    Auto-generate an MCP server from your code
+  </Card>
   <Card title="OpenAPI" icon="code" href="/openapi">
     Connect your REST API via spec file
   </Card>

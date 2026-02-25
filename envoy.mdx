@@ -1,0 +1,183 @@
+---
+title: "Envoy CLI"
+description: "Auto-generate an MCP server from your backend codebase"
+---
+
+Envoy reads your backend code, generates a complete MCP server, and deploys it to Crow — so your agent can call your API without you writing any MCP code.
+
+<Info>
+**No MCP knowledge required.** Envoy analyzes your routes, schemas, and auth patterns, then builds and deploys a production-ready MCP server for you.
+</Info>
+
+## Quick Start
+
+```bash
+export CROW_API_KEY=ck_...
+npx @usecrow/envoy
+```
+
+Run this from the root directory that contains your project folders (backend, frontend, etc.). Envoy will ask which directories are relevant before it starts.
+
+### Get Your API Key
+
+1. Go to [app.usecrow.com](https://app.usecrow.com) → **Tools**
+2. Click **Generate Envoy Key**
+3. Copy the `ck_...` key
+
+## Commands
+
+<CodeGroup>
+
+```bash Generate (default)
+npx @usecrow/envoy
+```
+
+```bash Fix / Iterate
+npx @usecrow/envoy fix
+```
+
+```bash Deploy
+npx @usecrow/envoy deploy
+```
+
+</CodeGroup>
+
+| Command | What it does |
+|---------|-------------|
+| `generate` | Reads your codebase, generates an MCP server from scratch |
+| `fix` | Loads your existing MCP server and iterates on it (add tools, fix bugs) |
+| `deploy` | Deploys the latest saved version to production |
+
+## Options
+
+| Flag | Description |
+|------|-------------|
+| `--api-key <key>` | Crow API key (alternative to `CROW_API_KEY` env var) |
+| `--ci` | CI mode — structured JSON output on stdout |
+| `--dirs <a,b,c>` | Comma-separated directories to scan (CI mode, skips interactive prompt) |
+| `--help, -h` | Show help |
+| `--version, -v` | Show version |
+
+## How It Works
+
+```
+1. npx @usecrow/envoy
+2. Envoy scans your project directories
+3. AI agent analyzes routes, schemas, auth patterns
+4. Generates a complete MCP server (server.py + requirements.txt)
+5. Saves to Crow with versioning
+6. Deploy when ready → your agent can now call your API
+```
+
+### What Envoy Generates
+
+Envoy produces a [FastMCP](https://github.com/jlowin/fastmcp) server that wraps your API endpoints as MCP tools. For example, if your backend has:
+
+```python
+@app.get("/api/orders/{order_id}")
+async def get_order(order_id: str):
+    ...
+
+@app.post("/api/orders/{order_id}/cancel")
+async def cancel_order(order_id: str):
+    ...
+```
+
+Envoy generates:
+
+```python
+from fastmcp import FastMCP
+
+mcp = FastMCP("My Backend")
+
+@mcp.tool()
+async def get_order(order_id: str) -> dict:
+    """Look up an order by ID. Returns order details including status and total."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{API_BASE_URL}/api/orders/{order_id}", ...)
+        return response.json()
+
+@mcp.tool()
+async def cancel_order(order_id: str) -> dict:
+    """Cancel a pending order."""
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{API_BASE_URL}/api/orders/{order_id}/cancel", ...)
+        return response.json()
+```
+
+## Workflow
+
+### First Time: Generate
+
+```bash
+export CROW_API_KEY=ck_...
+npx @usecrow/envoy
+```
+
+1. Select which directories to scan
+2. Envoy reads your code and generates an MCP server
+3. Review the generated tools in a conversation loop
+4. When satisfied, the server is saved to Crow
+
+### Iterate: Fix
+
+```bash
+npx @usecrow/envoy fix
+```
+
+Loads your existing MCP server and lets you make changes:
+- "Add a tool for the `/api/users` endpoint"
+- "Fix the auth header on the cancel_order tool"
+- "Remove the get_all_orders tool"
+
+### Ship: Deploy
+
+```bash
+npx @usecrow/envoy deploy
+```
+
+Deploys the latest saved version. Your Crow agent immediately starts using the new tools.
+
+## CI Mode
+
+For automated pipelines, use `--ci` for structured JSON output:
+
+```bash
+CROW_API_KEY=ck_... npx @usecrow/envoy --ci --dirs backend,shared
+```
+
+This skips interactive prompts and outputs JSON to stdout.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `CROW_API_KEY` | Yes | Your Crow Envoy API key (`ck_...`) |
+| `CROW_API_URL` | No | Override API URL (for development only) |
+
+---
+
+## Envoy vs Manual MCP Setup
+
+| | Envoy | Manual ([Server-Side MCP](/server-side-mcp)) |
+|--|-------|----------------------------------------------|
+| **Setup time** | Minutes | Hours |
+| **MCP knowledge needed** | None | Yes |
+| **Hosting** | Crow hosts it for you | You host your own server |
+| **Updating** | `npx @usecrow/envoy fix` | Edit code, redeploy |
+| **Best for** | Getting started fast, standard REST APIs | Custom logic, complex auth, full control |
+
+<Tip>
+Start with Envoy to get tools working quickly. If you need more control later, you can always switch to a self-hosted MCP server.
+</Tip>
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Server-Side MCP" icon="server" href="/server-side-mcp">
+    Self-hosted MCP server setup (manual approach)
+  </Card>
+  <Card title="MCP Authentication" icon="key" href="/server-side-mcp-authentication">
+    Auth patterns for MCP servers
+  </Card>
+</CardGroup>

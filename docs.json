@@ -33,6 +33,7 @@
             "group": "Integration",
             "pages": [
               "integration-overview",
+              "envoy",
               {
                 "group": "Server-Side Tools",
                 "pages": ["openapi", "openapi-authentication", "server-side-mcp", "server-side-mcp-authentication"]
