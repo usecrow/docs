@@ -1,172 +1,73 @@
 ---
-title: "Server-Side MCP"
-description: "Expose your backend as an MCP server for Crow's agent"
+title: "Connect Your MCP Server"
+description: "Point Crow at an MCP server you already have running"
 ---
 
-Server-Side MCP lets Crow's agent call tools on **your** MCP server. You build an MCP server that wraps your backend, point Crow at it, and the agent automatically discovers and uses your tools.
+If you already have an MCP server deployed, connect it to Crow so your agent can use its tools.
 
-<Info>
-**MCP (Model Context Protocol)** is an open standard for connecting AI agents to external services. Instead of uploading an OpenAPI spec, you run a live MCP server that Crow connects to directly.
-</Info>
+<Tip>
+**Don't have an MCP server yet?** Use [Envoy](/envoy) to auto-generate one from your codebase in minutes — no MCP knowledge needed.
+</Tip>
 
-## When to Use Server-Side MCP vs OpenAPI
+## Connect in Dashboard
 
-| | OpenAPI | Server-Side MCP |
-|--|---------|-----------------|
-| **Setup** | Upload a spec file | Run a live server |
-| **Tool discovery** | Parsed from spec (static) | Queried from server (live) |
-| **Auth options** | API Key, Bearer, JWT Forward | Service Key + Header Mappings |
-| **Best for** | Simple REST APIs | Complex logic, multi-step tools, real-time data |
-| **Requires** | OpenAPI/Swagger spec | MCP server (e.g., FastMCP, custom) |
-
-**Use OpenAPI** if you already have a spec and just need simple endpoint calls.
-
-**Use Server-Side MCP** if you want richer tool definitions, server-side logic, or your API doesn't have a clean OpenAPI spec.
-
-<Note>
-Server-Side MCP and OpenAPI are **mutually exclusive** per product. Configuring one removes the other.
-</Note>
-
----
-
-## Setup
-
-### 1. Build Your MCP Server
-
-Create an MCP server that exposes your tools. Here's a minimal example using [FastMCP](https://github.com/jlowin/fastmcp):
-
-<CodeGroup>
-
-```python Python (FastMCP)
-from fastmcp import FastMCP
-
-mcp = FastMCP("My Backend")
-
-@mcp.tool()
-async def get_order(order_id: str) -> dict:
-    """Look up an order by ID."""
-    order = await db.orders.find(order_id)
-    return {"id": order.id, "status": order.status, "total": order.total}
-
-@mcp.tool()
-async def cancel_order(order_id: str) -> dict:
-    """Cancel a pending order."""
-    result = await db.orders.cancel(order_id)
-    return {"success": result.ok, "message": result.message}
-```
-
-```javascript Node.js (MCP SDK)
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
-
-const server = new McpServer({ name: "My Backend", version: "1.0.0" });
-
-server.tool("get_order", { order_id: z.string() }, async ({ order_id }) => {
-  const order = await db.orders.find(order_id);
-  return { content: [{ type: "text", text: JSON.stringify(order) }] };
-});
-```
-
-</CodeGroup>
-
-Run it:
-
-```bash
-# Python (FastMCP)
-pip install fastmcp
-fastmcp run server.py --transport streamable-http --host 0.0.0.0 --port 8080
-
-# Node.js
-npx @modelcontextprotocol/server --transport streamable-http --port 8080
-```
-
-### 2. Connect in Dashboard
-
-1. Go to **Integration** → **Server-Side MCP**
-2. Fill in:
+1. Go to **Integration** → **Server-Side Tools**
+2. Enter your server details:
 
 | Field | Description | Example |
 |-------|-------------|---------|
 | **Name** | Display name | `my-backend` |
 | **URL** | Your MCP server endpoint | `https://mcp.yourapp.com/mcp` |
-| **Transport** | Connection protocol | Streamable HTTP (recommended) |
+| **Transport** | Streamable HTTP (recommended) or SSE | Streamable HTTP |
+| **Headers** | Optional auth headers | `Authorization: Bearer sk-...` |
 
-3. Click **Test Connection** to verify Crow can reach your server and discover tools
+3. Click **Test Connection** — Crow will connect and discover your tools
 4. Click **Save**
 5. Go to **Actions** to enable the tools you want the agent to use
 
-### 3. Set Up Authentication
+## Identity Headers
 
-Your MCP server likely needs to authenticate requests. See [Server-Side MCP Authentication](/server-side-mcp-authentication) for the full guide on:
+Forward end-user identity to your MCP server so tools can return user-specific data.
 
-- **Service Keys** — how Crow proves it's authorized to call your server
-- **Identity Headers** — how end-user identity flows through to your tools
+Under **Header Mappings**, add mappings like:
 
----
+| Header | Source | What gets sent |
+|--------|--------|----------------|
+| `X-User-ID` | `identity.user_id` | The logged-in user's ID |
+| `X-Tenant-ID` | `identity.tenant_id` | Custom claim from your identity JWT |
 
-## How It Works
+Crow resolves these from the user's [identity token](/identity-verification) and sends them as HTTP headers on every request to your MCP server.
 
-When an end user sends a message in the widget:
+<Note>
+Identity headers only work for authenticated users. Set up [Identity Verification](/identity-verification) first.
+</Note>
 
-```
-1. User sends message → Crow backend
-2. Crow backend connects to your MCP server
-   - Sends configured headers (service key, identity headers)
-   - Discovers available tools
-3. AI agent decides which tool to call based on user's message
-4. Tool executes on your MCP server
-5. Result flows back through Crow to the user
-```
+For the full auth chain (service keys, identity forwarding, backend middleware), see [Server-Side MCP Authentication](/server-side-mcp-authentication).
 
-Crow connects to your MCP server **on every chat request** to ensure it always has the latest tool definitions.
+## Managing Your Server
 
----
-
-## Header Mappings
-
-Header mappings let you forward dynamic values — like the current user's ID or email — to your MCP server as HTTP headers.
-
-| Source | What it reads | Example |
-|--------|--------------|---------|
-| `identity.*` | Claims from the user's identity token | `identity.user_id` → the logged-in user's ID |
-| `product.*` | Fields from the product config | `product.id` → the Crow product ID |
-
-**Example:** Your MCP server needs to know which user is asking. Add a header mapping:
-
-```
-Header: X-User-ID
-Source: identity.user_id
-```
-
-Now every request from Crow to your MCP server includes `X-User-ID: user_456`.
-
-See [Server-Side MCP Authentication](/server-side-mcp-authentication) for the full identity flow.
-
----
-
-## Tips
-
-- Use descriptive tool names and descriptions — the AI uses these to decide when to call each tool
-- Return structured data (JSON objects) from tools, not raw strings
-- Keep tools focused — one action per tool works better than multi-purpose tools
-- Test in the **Sandbox** after connecting to verify the agent uses your tools correctly
+- **Sync Tools** — Re-discover tools after updating your server
+- **Enable/Disable Tools** — Toggle individual tools in **Actions**
+- **Edit** — Change URL, transport, or headers
+- **Delete** — Remove the connection entirely
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| Connection failed | Verify URL is reachable, check transport type matches server |
-| Tools not appearing | Click **Sync Tools** in dashboard, check server logs |
-| Agent not using tools | Enable tools in **Actions**, check tool descriptions are clear |
-| 401 / auth errors | See [Authentication guide](/server-side-mcp-authentication) |
-| Timeout errors | Ensure MCP server responds within 10 seconds |
+| Connection failed | Verify URL is reachable, check transport type matches your server |
+| Tools not appearing | Click **Sync Tools**, check server logs |
+| Agent not using tools | Enable tools in **Actions**, make sure tool descriptions are clear |
+| 401 errors | Check auth headers, see [Authentication guide](/server-side-mcp-authentication) |
+| Timeout | Ensure your MCP server responds within 10 seconds |
 
 ---
 
-<Card title="Server-Side MCP Authentication" icon="key" href="/server-side-mcp-authentication">
-  Service keys, identity headers, and the full auth chain explained
-</Card>
-
-<Card title="Need Help?" icon="question" href="mailto:support@usecrow.ai">
-  Reach out if you run into issues connecting your MCP server
-</Card>
+<CardGroup cols={2}>
+  <Card title="Envoy CLI" icon="wand-magic-sparkles" href="/envoy">
+    Auto-generate an MCP server from your code
+  </Card>
+  <Card title="Authentication" icon="key" href="/server-side-mcp-authentication">
+    Service keys, identity headers, and the full auth chain
+  </Card>
+</CardGroup>

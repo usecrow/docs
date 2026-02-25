@@ -11,31 +11,13 @@ These are tools that run on a server. The agent calls them, they execute, and re
 
 | Type | Best for | Setup |
 |------|----------|-------|
-| [Envoy CLI](/envoy) | Any backend — auto-generates an MCP server | `npx @usecrow/envoy` |
-| [OpenAPI](/openapi) | Your REST API with a spec file | Upload OpenAPI/Swagger spec |
-| [Server-Side MCP](/server-side-mcp) | Your backend via MCP protocol | Run an MCP server, connect URL |
+| [Envoy CLI](/envoy) | Any backend — auto-generates and hosts an MCP server | `npx @usecrow/envoy` |
+| [Connect Your MCP Server](/server-side-mcp) | You already have an MCP server deployed | Enter URL in dashboard |
+| [OpenAPI](/openapi) | You have an OpenAPI/Swagger spec | Upload spec file |
 
-### When to Use Envoy (Recommended)
-
-- You want to get tools working in minutes, not hours
-- You have a standard REST backend and don't want to write MCP code
-- You want Crow to host and manage the MCP server for you
-
-### When to Use OpenAPI
-
-- You already have an OpenAPI/Swagger spec
-- You want simple endpoint calls (check orders, create tickets)
-- You need API Key, Bearer Token, or JWT Forward auth
-
-### When to Use Server-Side MCP
-
-- You want full control over tool definitions and hosting
-- Your tools need complex server-side logic beyond API wrapping
-- You need custom auth flows or identity forwarding
-
-<Note>
-OpenAPI and Server-Side MCP are **mutually exclusive** per product. Envoy generates and hosts an MCP server for you, so it works alongside either approach.
-</Note>
+<Tip>
+**Start with Envoy** if you don't have an MCP server yet. It reads your code and generates one for you.
+</Tip>
 
 ## Client-Side Tools
 
@@ -82,8 +64,8 @@ Third-party MCP servers that you connect to (not your own backend).
   <Card title="OpenAPI" icon="code" href="/openapi">
     Connect your REST API via spec file
   </Card>
-  <Card title="Server-Side MCP" icon="server" href="/server-side-mcp">
-    Connect your backend via MCP protocol
+  <Card title="Connect Your MCP Server" icon="server" href="/server-side-mcp">
+    Point Crow at your existing MCP server
   </Card>
   <Card title="Client-Side Tools" icon="browser" href="/client-side-tools">
     Browser-side tool handlers
