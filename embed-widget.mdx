@@ -66,6 +66,7 @@ Choose your preferred installation method:
     | `setContextLabel` | Visible label for current page context. See [Context Label](#context-label) |
     | `open` | Programmatically open/expand the widget or copilot |
     | `close` | Programmatically close/collapse the widget or copilot |
+    | `sendMessage` | Open the widget and send a message programmatically. See [Programmatic Send](#programmatic-send-message) |
   </Tab>
 
   <Tab title="React SDK">
@@ -523,6 +524,44 @@ Works with both the floating widget and the copilot sidebar.
 
 <Tip>
 `window.crow('open')` works from anywhere — event handlers, `useEffect`, timeouts, or third-party callbacks. No imports needed.
+</Tip>
+
+---
+
+## Programmatic Send Message
+
+Open the widget and send a message in one call — perfect for "search bar → chat" handoffs, CTA buttons, or triggering the agent from your own UI.
+
+```javascript
+window.crow('sendMessage', { text: 'Find me React developer jobs' });
+```
+
+The widget opens automatically (if collapsed) and the message is sent as if the user typed it.
+
+### Example: Hero search bar
+
+Embed your own input on a landing page and hand off to the Crow agent:
+
+```html
+<input type="text" id="search" placeholder="Ask anything..." />
+<button onclick="sendToCrow()">Search</button>
+
+<script>
+  function sendToCrow() {
+    const text = document.getElementById('search').value;
+    window.crow('sendMessage', { text });
+  }
+</script>
+```
+
+You can also pass a plain string:
+
+```javascript
+window.crow('sendMessage', 'What can you help me with?');
+```
+
+<Tip>
+Combine with [Page Context](#page-context) to give the agent full awareness of the current page when the message is sent.
 </Tip>
 
 ---
