@@ -1,0 +1,41 @@
+---
+title: "Browser"
+description: "Browser keeps websites beside an Agent without automatically granting that Agent access."
+---
+
+**Browser** is Nest's human-controlled web browser in the current Agent's right
+drawer. Use it to keep a website or web app beside the conversation without
+leaving Nest.
+
+## Open Browser
+
+1. Open the current Agent's right drawer.
+2. Choose **New tab (+) → Browser**. If the drawer is showing its home view,
+   choose **Browser** there instead.
+3. Enter a website address or search in the Browser toolbar.
+
+Browser tabs belong to the current Agent and last for the current app session.
+Website sign-ins and other site data stay in that Nest account's local Browser
+profile, so closing a tab does not normally sign you out.
+
+## Profiles and sign-in
+
+Browser starts with a local Nest profile. On macOS, you can also import a copy
+of a compatible Chrome or Arc profile from the Browser profile control. Import
+is a one-time snapshot and may not preserve every login. Browser profile import
+is currently unavailable on Windows.
+
+Website session data remains on the device and is not included in Nest's cloud
+account sync.
+
+## Agent access
+
+<Note>
+  Viewing or signing into a website does not automatically grant the Agent
+  access to your tab. When an Agent needs to interact with a website, Nest uses
+  a separate access flow and an Agent-owned Browser tab. Current permissions
+  remain authoritative.
+</Note>
+
+Browser supports HTTPS websites and local development pages on loopback
+addresses such as `localhost`. Insecure public HTTP pages are blocked.
