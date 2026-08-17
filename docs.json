@@ -44,7 +44,6 @@
             "pages": [
               "controls/editor",
               "controls/permissions",
-              "controls/safe-mode",
               "controls/coding-mode",
               "controls/personalization"
             ]
