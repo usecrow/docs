@@ -1,0 +1,18 @@
+---
+title: "Permissions"
+description: "Read only, Ask first, and Always Allow control what an Agent may do."
+---
+
+Nest has three user-facing permission modes:
+
+| Mode | Behavior |
+| --- | --- |
+| **Read only** | Allows inspection but blocks changes. |
+| **Ask first** | Pauses for approval when a change requires it. |
+| **Always Allow** | Removes ordinary approval pauses; sensitive connected-app actions may still require review. |
+
+Choose the mode from the conversation's permission control.
+
+Permissions are separate from [Safe Mode](/controls/safe-mode). Changing the
+permission mode does not turn Safe Mode or Coding Mode on or off, and Always
+Allow does not widen an operating-system filesystem boundary.

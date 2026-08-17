@@ -1,110 +1,42 @@
 ---
-title: "Introduction"
-description: "Turn your application AI-native with Crow's agent"
+title: "Meet Nest"
+description: "Nest is an AI workspace where persistent Agents help with your work, files, knowledge, and connected apps."
 ---
 
-<Card>
-  <div>
-    <p style={{ color: '#666', marginBottom: '12px', fontSize: '14px' }}>Using Cursor? Install in one click:</p>
-    <a 
-      href="cursor://anysphere.cursor-deeplink/mcp/install?name=crow&config=eyJ1cmwiOiJodHRwczovL2RvY3MudXNlY3Jvdy5haS9tY3AifQ%3D%3D"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 14px',
-        borderRadius: '6px',
-        backgroundColor: '#171717',
-        color: '#fff',
-        fontWeight: 500,
-        fontSize: '14px',
-        textDecoration: 'none',
-        border: '1px solid #333'
-      }}
-    >
-      <img src="/cursor_logo.png" alt="Cursor" width="16" height="16" style={{ borderRadius: '3px' }} />
-      Add to Cursor
-    </a>
-  </div>
-</Card>
-
-Crow is an embeddable AI agent that answers questions, takes actions, and knows your product.
-
-<Tabs>
-  <Tab title="Script Tag">
-```html
-<script
-  src="https://api.usecrow.org/static/crow-widget.js"
-  data-api-url="https://api.usecrow.org"
-  data-product-id="YOUR_PRODUCT_ID"
-></script>
-```
-  </Tab>
-  <Tab title="React SDK">
-```bash
-npm install @usecrow/client @usecrow/ui
-```
-```jsx
-import { CrowWidget } from '@usecrow/ui';
-
-<CrowWidget productId="YOUR_PRODUCT_ID" apiUrl="https://api.usecrow.org" />
-```
-  </Tab>
-</Tabs>
+Nest is an AI workspace for getting real work done. Its Agents can help you
+write, research, plan, analyze, organize information, work with files, and use
+connected apps—all inside one persistent place.
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="play" href="/quickstart">
-    Live in 5 minutes
+  <Card title="Agents" icon="messages" href="/concepts/agents">
+    Persistent conversations with their own history, personality, Side Chats,
+    and Automations.
   </Card>
-  <Card title="Identity Verification" icon="fingerprint" href="/identity-verification">
-    Authenticate your users
+  <Card title="Brain" icon="brain" href="/concepts/brain">
+    Durable local knowledge about you, your people, and your work.
   </Card>
-  <Card title="Crow Docs MCP" icon="robot" href="/crow-docs-mcp">
-    AI-assisted integration
+  <Card title="Skills" icon="wand-magic-sparkles" href="/concepts/skills">
+    Reusable workflows you can select, install, or create with an Agent.
+  </Card>
+  <Card title="Automations" icon="clock-rotate-left" href="/concepts/automations">
+    Recurring work whose results return to the Agent that owns it.
   </Card>
 </CardGroup>
 
----
+## Ask Nest about Nest
 
-## Core Features
+You can ask an Agent questions such as:
 
-| Feature | What it does |
-|---------|-------------|
-| **Knowledge Base** | Agent learns from your docs, website, or Notion |
-| **API Integration** | Agent calls your API to take actions (check orders, cancel subscriptions) |
-| **Identity Verification** | Agent knows who the user is and can act on their behalf |
-| **Workflows** | Guided multi-step flows for complex tasks |
+- “What is a Side Chat?”
+- “Create a weekly Automation for this.”
+- “Make this workflow into a Skill.”
+- “Change how you respond to me in the future.”
 
----
+The Agent receives the current app state for each turn, including the platform,
+enabled features, and relevant capabilities. That live state takes precedence
+over generic guidance when a feature is disabled or unavailable.
 
-## How it Works
-
-1. **Embed** — Add the script tag to your site
-2. **Configure** — Set instructions and add knowledge in the [Sandbox](/sandbox-overview)
-3. **Integrate** — Connect your API via [OpenAPI spec](/openapi) or [MCP](/mcp-servers)
-4. **Deploy** — Monitor conversations in [Activity](/activity-overview)
-
----
-
-## Guides
-
-<CardGroup cols={2}>
-  <Card title="Knowledge Base" icon="book" href="/knowledge-base-overview">
-    Files, websites, Notion
-  </Card>
-  <Card title="API Integration" icon="plug" href="/openapi">
-    Connect your REST API
-  </Card>
-  <Card title="Actions" icon="bolt" href="/actions-overview">
-    Enable agent capabilities
-  </Card>
-  <Card title="OpenAPI Auth" icon="key" href="/openapi-authentication">
-    API Key, Bearer, JWT Forward
-  </Card>
-</CardGroup>
-
----
-
-## Need Help?
-
-Running into issues or want our engineers to customize Crow for your use case? [Book a demo](https://cal.com/aryan-vij-wpimwt/30min).
+<Note>
+  Tool access, permissions, and Safe Mode remain authoritative. Reading this
+  guide never grants an Agent additional access.
+</Note>

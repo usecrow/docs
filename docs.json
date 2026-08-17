@@ -1,83 +1,64 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Crow Documentation",
+  "name": "Nest",
+  "description": "The user guide for Nest, your AI workspace.",
   "colors": {
-    "primary": "#6366F1",
-    "light": "#4F46E5",
-    "dark": "#818CF8"
+    "primary": "#171717",
+    "light": "#FAFAFA",
+    "dark": "#737373"
   },
-  "favicon": "/crow_logo.png",
+  "favicon": "/nest-icon.png",
+  "logo": {
+    "light": "/nest-icon.png",
+    "dark": "/nest-icon.png"
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Documentation",
+        "tab": "Nest guide",
         "groups": [
           {
-            "group": "Get Started",
-            "pages": ["index", "quickstart", "crow-docs-mcp"]
+            "group": "Start here",
+            "pages": ["index", "getting-started"]
           },
           {
-            "group": "Setup",
-            "pages": ["embed-widget", "react-native", "flutter", "multi-language", "identity-verification", "callbacks", "deploy-overview"]
-          },
-          {
-            "group": "Agent",
-            "pages": ["sandbox-overview", "actions-overview", "user-suggestions", "workflows", "page-navigation"]
-          },
-          {
-            "group": "Knowledge Base",
-            "pages": ["knowledge-base-overview", "files", "website"]
-          },
-          {
-            "group": "Integration",
+            "group": "Organize your work",
             "pages": [
-              "integration-overview",
-              "envoy",
-              {
-                "group": "Server-Side Tools",
-                "pages": ["openapi", "openapi-authentication", "server-side-mcp", "server-side-mcp-authentication"]
-              },
-              "multi-subdomain-endpoints",
-              "client-side-tools",
-              "tool-renderers",
-              "mcp-servers"
+              "concepts/agents",
+              "concepts/spaces",
+              "concepts/side-chats",
+              "concepts/brain"
             ]
           },
           {
-            "group": "Monitor",
-            "pages": ["activity-overview"]
+            "group": "Extend Nest",
+            "pages": [
+              "concepts/skills",
+              "concepts/automations",
+              "concepts/connected-apps"
+            ]
+          },
+          {
+            "group": "Work and control",
+            "pages": [
+              "controls/editor",
+              "controls/permissions",
+              "controls/safe-mode",
+              "controls/coding-mode",
+              "controls/personalization"
+            ]
           }
         ]
       }
     ]
   },
-  "logo": {
-    "light": "/logo/crow.png",
-    "dark": "/logo/crow.png"
-  },
   "navbar": {
     "links": [
       {
-        "label": "Dashboard",
-        "href": "https://app.usecrow.ai"
-      },
-      {
-        "label": "Discord",
-        "href": "https://discord.gg/sJtyHyvhEn",
-        "icon": "discord"
+        "label": "Nest",
+        "href": "https://trynest.ai"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Get Started",
-      "href": "https://app.usecrow.ai"
-    }
-  },
-  "footer": {
-    "socials": {
-      "website": "https://usecrow.ai",
-      "discord": "https://discord.gg/sJtyHyvhEn"
-    }
+    ]
   }
 }
