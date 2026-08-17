@@ -28,7 +28,8 @@
               "concepts/agents",
               "concepts/spaces",
               "concepts/side-chats",
-              "concepts/brain"
+              "concepts/brain",
+              "concepts/browser"
             ]
           },
           {
@@ -42,7 +43,6 @@
           {
             "group": "Work and control",
             "pages": [
-              "controls/editor",
               "controls/permissions",
               "controls/coding-mode",
               "controls/personalization"
