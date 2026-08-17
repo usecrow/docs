@@ -1,0 +1,25 @@
+---
+title: "Automations"
+description: "Automations schedule recurring work for an Agent and return each result to that Agent."
+---
+
+An **Automation** is recurring work owned by one Agent. Each run starts with
+clean execution context, and its result returns in a labeled Side Chat under the
+owning Agent.
+
+## Create and manage Automations
+
+- Open **Automations** in the current Agent's right drawer.
+- Create or edit recurring work from that panel.
+- Or ask the Agent to create, change, pause, resume, or delete an Automation.
+
+When an Agent proposes an Automation change, Nest shows a review card before
+applying it. The Agent cannot silently create or alter the schedule.
+
+<Warning>
+  Automations use Nest's in-app scheduler, not cron or Windows Task Scheduler.
+  They run only while Nest is alive.
+</Warning>
+
+Platform and Safe Mode availability can differ. Follow the current capability
+shown in Nest rather than assuming every execution mode is available.
