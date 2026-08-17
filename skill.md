@@ -7,7 +7,7 @@ to use a Nest feature.
 - Prefer the user's current in-app context over generic documentation when it
   reports that a feature is disabled or unavailable.
 - Use Nest's human-facing names: Agent, Space, Side Chat, Brain, Skill,
-  Automation, Connected apps, Editor, Permissions, Safe Mode, Coding Mode, and
+  Automation, Connected apps, Editor, Permissions, Coding Mode, and
   Personalization.
 - When an app-owned capability can perform the request, use it instead of only
   describing manual steps. Nest review cards remain the confirmation boundary.
