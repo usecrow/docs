@@ -1,22 +1,22 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Nest",
-  "description": "The user guide for Nest, your AI workspace.",
+  "name": "Turnstone",
+  "description": "The user guide for Turnstone, your AI workspace.",
   "colors": {
     "primary": "#171717",
     "light": "#FAFAFA",
     "dark": "#737373"
   },
-  "favicon": "/nest-icon.png",
+  "favicon": "/turnstone-icon.png",
   "logo": {
-    "light": "/nest-icon.png",
-    "dark": "/nest-icon.png"
+    "light": "/turnstone-icon.png",
+    "dark": "/turnstone-icon.png"
   },
   "navigation": {
     "tabs": [
       {
-        "tab": "Nest guide",
+        "tab": "Turnstone guide",
         "groups": [
           {
             "group": "Start here",
@@ -26,14 +26,14 @@
             "group": "Organize your work",
             "pages": [
               "concepts/agents",
-              "concepts/spaces",
+              "concepts/families",
               "concepts/side-chats",
               "concepts/brain",
               "concepts/browser"
             ]
           },
           {
-            "group": "Extend Nest",
+            "group": "Extend Turnstone",
             "pages": [
               "concepts/skills",
               "concepts/automations",
@@ -55,9 +55,15 @@
   "navbar": {
     "links": [
       {
-        "label": "Nest",
-        "href": "https://trynest.ai"
+        "label": "Turnstone",
+        "href": "https://myturnstone.ai"
       }
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/concepts/spaces",
+      "destination": "/concepts/families"
+    }
+  ]
 }
