@@ -3,6 +3,11 @@
   "theme": "mint",
   "name": "Turnstone",
   "description": "The user guide for Turnstone, your AI workspace.",
+  "seo": {
+    "metatags": {
+      "canonical": "https://docs.myturnstone.ai"
+    }
+  },
   "colors": {
     "primary": "#171717",
     "light": "#FAFAFA",
